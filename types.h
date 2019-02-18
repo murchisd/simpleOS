@@ -3,7 +3,8 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
 
-#define LOOP 1666666         // handly loop limit exec asm("inb $0x80");
+//#define LOOP 1666666         // handly loop limit exec asm("inb $0x80");
+#define LOOP 166666
 #define TIME_LIMIT 200 
 //#define TIME_LIMIT 200       // max timer count, then rotate process
 #define PROC_NUM 20          // max number of processes
@@ -54,5 +55,11 @@ typedef struct {             // generic queue type
    int q[Q_SIZE];            // integers are queued in q[] array
    int size;                 // size is also where the tail is for new data
 } q_t;
+
+typedef struct{
+  int owner;
+  int passes;
+  q_t wait_q;
+}sem_t;
 
 #endif // __TYPES_H__

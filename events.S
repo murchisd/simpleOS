@@ -28,10 +28,10 @@ CommonPart:
 ENTRY(Loader)
   movl 4(%esp), %eax       // copy whats above stack pointer
   movl %eax, %esp           // copy esp to eax
-  pop %gs                    // pop regs
-  pop %fs
-  pop %es
-  pop %ds                    
+  popl %gs                    // pop regs
+  popl %fs
+  popl %es
+  popl %ds                    
   popa                      // pop all
   addl $4, %esp              // skip timer event
   iret                      // pop eip, cs, eflags
@@ -47,4 +47,16 @@ ENTRY(SleepEvent)
 
 ENTRY(GetPidEvent)
   pushl $GETPID_EVENT
+  jmp CommonPart
+
+ENTRY(SemAllocEvent)
+  pushl $SEMALLOC_EVENT
+  jmp CommonPart
+
+ENTRY(SemWaitEvent)
+  pushl $SEMWAIT_EVENT
+  jmp CommonPart
+
+ENTRY(SemPostEvent)
+  pushl $SEMPOST_EVENT
   jmp CommonPart
