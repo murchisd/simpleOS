@@ -1,8 +1,10 @@
 // types.h, 159
 
+
 #ifndef __TYPES_H__
 #define __TYPES_H__
 
+#include "FStypes.h"
 #define LOOP 1666666         // handly loop limit exec asm("inb $0x80");
 //#define LOOP 166666
 #define TIME_LIMIT 200 

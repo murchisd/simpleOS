@@ -83,4 +83,20 @@ ENTRY(PortReadEvent)
   pushl $PORTREAD_EVENT
   jmp CommonPart
 
+//Phase 6
+ENTRY(FSfindEvent)
+  pushl $FSFIND_EVENT
+  jmp CommonPart
+
+ENTRY(FSopenEvent)
+  pushl $FSOPEN_EVENT
+  jmp CommonPart
+
+ENTRY(FSreadEvent)
+  pushl $FSREAD_EVENT
+  jmp CommonPart
+
+ENTRY(FScloseEvent)
+  pushl $FSCLOSE_EVENT
+  jmp CommonPart
 

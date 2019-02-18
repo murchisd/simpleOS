@@ -29,4 +29,15 @@ void PortAllocHandler(int *eax);
 void PortWriteHandler(char one, int port_num);
 void PortReadHandler(char *one, int port_num);
 
+//Phase 6
+void FSfindHandler(void);
+void FSopenHandler(void);
+void FSreadHandler(void);
+int FScanAccessFD(int fd, int owner);
+int FSallocFD(int owner);
+dir_t *FSfindName( char *name );
+dir_t *FSfindNameSub( char *name, dir_t *this_dir );
+void FSdir2attr( dir_t *dir_p, attr_t *attr_p );
+void FScloseHandler(void);
+
 #endif

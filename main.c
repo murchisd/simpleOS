@@ -1,5 +1,5 @@
 // main.c, 159
-// This is kernel code for phase 4
+// This is kernel code for phase 6
 //
 // Team Name: Athwal (Members: Donald Murchison and Brian Souza)
 
@@ -10,6 +10,7 @@
 #include "types.h"      // data types
 #include "events.h"     // events for kernel to serve
 #include "services.h"
+#include "FSdata.h"
 
 // kernel's own data:
 int current_pid;        // current selected PID; if 0, none selected
@@ -51,9 +52,20 @@ int main() {
    int i;
    struct i386_gate *IDT_p; // DRAM location where IDT is
    current_pid=0;
+
 //Phase 2
    ch_p = (unsigned short *)0xb8000;
    current_time=0;
+
+//Phase 6
+   for (i=0; i<FD_NUM; i++){
+       fd_array[i].owner=0;
+   }
+   root_dir[0].size = sizeof(root_dir);   // can only be assigned during runtime
+   bin_dir[0].size = sizeof(bin_dir);     // even tho they're compiler-time sizes
+   bin_dir[1].size = root_dir[0].size;    // otherwise, they would be recursive
+   www_dir[0].size = sizeof(www_dir);     // definitions which compiler rejects
+   www_dir[1].size = root_dir[0].size;
 
 //Phase 1
    MyBzero((char*)&ready_q,sizeof(q_t));
@@ -77,6 +89,10 @@ int main() {
    fill_gate(&IDT_p[PORTALLOC_EVENT],(int)PortAllocEvent,get_cs(),ACC_INTR_GATE,0); //Phase 5
    fill_gate(&IDT_p[PORTWRITE_EVENT],(int)PortWriteEvent,get_cs(),ACC_INTR_GATE,0); //Phase 5
    fill_gate(&IDT_p[PORTREAD_EVENT],(int)PortReadEvent,get_cs(),ACC_INTR_GATE,0); //Phase 5
+   fill_gate(&IDT_p[FSFIND_EVENT],(int)FSfindEvent,get_cs(),ACC_INTR_GATE,0); //Phase 6
+   fill_gate(&IDT_p[FSOPEN_EVENT],(int)FSopenEvent,get_cs(),ACC_INTR_GATE,0); //Phase 6
+   fill_gate(&IDT_p[FSREAD_EVENT],(int)FSreadEvent,get_cs(),ACC_INTR_GATE,0); //Phase 6
+   fill_gate(&IDT_p[FSCLOSE_EVENT],(int)FScloseEvent,get_cs(),ACC_INTR_GATE,0); //Phase 6
    
    outportb(0x21, ~(1+8+16));      //set PIC mask to open up for timer IRQ0 only
    NewProcHandler(Init);    //to create Init proc
@@ -128,6 +144,18 @@ void Kernel(TF_t *TF_p) {   // kernel code exec (at least 100 times/second)
          break;
     case PORTREAD_EVENT:  //Phase 5
          PortReadHandler((char *)TF_p->eax, TF_p->ebx);
+         break;
+    case FSFIND_EVENT:  //Phase 6
+         FSfindHandler();
+         break;
+    case FSOPEN_EVENT:  //Phase 6
+         FSopenHandler();
+         break;
+    case FSREAD_EVENT:  //Phase 6
+         FSreadHandler();
+         break;
+    case FSCLOSE_EVENT:  //Phase 6
+         FScloseHandler();
          break;
     default:
          cons_printf("Kernel Panic: unknown event_num %d!\n",TF_p->event_num);

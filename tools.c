@@ -44,3 +44,49 @@ void EnQ(int data, q_t *p) {
    p->size++;
 }
 
+//Phase 6
+
+int MyStrlen(char *p){
+	int i=0;
+	while(*p!='\0'){
+		i++;
+		p++;
+	}
+	return i;
+}
+
+void MyStrcat(char *dst, char *addendum){
+	int len = MyStrlen(dst);
+	int i;
+	for(i=0;i<MyStrlen(addendum);i++){
+		dst[len]=addendum[i];
+		len++;
+	}
+	dst[len]='\0';
+}
+
+int MyStrcmp(char *p,char *q, int len){
+	int i;
+	for(i=0;i<len;i++){
+		if(p[i]!=q[i]){
+			return 0;
+		}
+	}
+	return 1;
+}
+
+void MyStrcpy(char *dst, char *src){
+	while(*src!='\0'){
+		*dst = *src;
+		dst++;
+		src++;
+	}
+	*dst='\0';
+}
+
+void MyMemcpy(char *dst, char *src, int size){
+	int i;
+	for(i=0;i<size;i++){
+		dst[i]=src[i];
+	}
+}

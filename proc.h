@@ -10,4 +10,10 @@ void UserProc(void);  // PID 2, 3, ...
 //Phase 5
 void TermProc(void);
 
+//Phase 6
+void TermCd(char *name, char *cwd, int my_port);
+void TermCat(char *name, char *cwd, int my_port);
+void TermLs(char *cwd, int my_port);
+void Attr2Str(attr_t *attr_p, char *str);
+
 #endif

@@ -1,6 +1,7 @@
 //kernel services calls
 
 #include "data.h"
+#include "tools.h"
 #include "services.h"
 //Phase 2
 void MySleep(int time){
@@ -129,4 +130,61 @@ void PortRead(char *p, int port_num) { // to read terminal KB
        if(size == BUFF_SIZE-1) break;		//break loop if size reaching BUFF_SIZE-1
    } 
    *p = '\0';		//where p points to is set to '\0'  // null-terminate str, overwirte \r
+}
+
+void FSfind(char *name, char *cwd, char *data){ // find CWD/name, return attr data
+   char tmp[BUFF_SIZE];
+   MyStrcpy(tmp, cwd);
+   MyStrcat(tmp, name);
+   asm("pushl %%eax;
+        pushl %%ebx;
+        movl %0, %%eax;
+        movl %1, %%ebx;
+        int $109;
+        popl %%ebx;
+        popl %%eax;"
+        :
+        : "g" ((int)tmp), "g"((int)data)
+        );
+}
+
+int FSopen(char *name, char *cwd) {              // alloc FD to open CWD/name
+   int fd;
+   char tmp[BUFF_SIZE];
+   MyStrcpy(tmp, cwd);
+   MyStrcat(tmp, name);
+   asm("pushl %%eax;
+        pushl %%ebx;
+        movl %1, %%eax;
+        int $110;
+        movl %%ebx, %0;
+        popl %%ebx;
+        popl %%eax;"
+        : "=g" (fd)
+        : "g" (tmp)
+        );
+   return fd;
+}
+
+void FSread(int fd, char *data) {                // read FD into data buffer
+   asm("pushl %%eax;
+        pushl %%ebx;
+        movl %0, %%eax;
+        movl %1, %%ebx;
+        int $111;
+        popl %%ebx;
+        popl %%eax;"
+        :
+        : "g" (fd), "g" (data)
+        );
+
+}
+void FSclose(int fd){                           // close allocated fd (FD)
+   asm("pushl %%eax;
+        movl %0, %%eax;
+        int $112;
+        popl %%eax;"
+        :
+        : "g" (fd)
+        );
 }

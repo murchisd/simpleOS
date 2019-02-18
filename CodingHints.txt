@@ -1,0 +1,199 @@
+CodingHints.txt  Phase 6 File Services (must work with two terminals)
+
+Load and run Demo.dli (for single terminal) to see the sequence of
+message prompting and keyboard entries for each shell commands.
+
+1. The given files:
+   FSdata.h, to be included in main.c with statement -- #include ...
+   FStypes.h, to be included in types.h with statement -- #include ...
+   what is in data.h.txt is to be added into data.h
+   what is in handlers.txt is to be added into handlers.c
+   add prototypes to handlers.h yourself from handlers.txt
+
+2. main()
+   "fill_gate" IDT with 4 new entries (below)
+   loop thru fd_array[] with indices 0 thru FD_NUM-1 to set the owner to 0 (not used)
+   and additional file storate program statements:
+      root_dir[0].size = sizeof(root_dir);   // can only be assigned during runtime
+      bin_dir[0].size = sizeof(bin_dir);     // even tho they're compiler-time sizes
+      bin_dir[1].size = root_dir[0].size;    // otherwise, they would be recursive
+      www_dir[0].size = sizeof(www_dir);     // definitions which compiler rejects
+      www_dir[1].size = root_dir[0].size;
+
+3. events.h/.S
+   declare and code for 4 new events
+      #define FSFIND_EVENT 109
+      #define FSOPEN_EVENT 110
+      #define FSREAD_EVENT 111
+      #define FSCLOSE_EVENT 112
+   and
+      void FSfindEvent(void);
+      void FSopenEvent(void);
+      void FSreadEvent(void);
+      void FScloseEvent(void);
+
+4. services.c/.h
+   code and prototype 4 new services
+      void FSfind(char *name, char *cwd, char *data); // find CWD/name, return attr data
+         char tmp[BUFF_SIZE];
+         MyStrcpy(tmp, cwd);
+         MyStrcat(tmp, name);
+         asm("...
+             move tmp to eax
+             move data to ebx
+             int ???
+             ...
+
+      int FSopen(char *name, char *cwd);              // alloc FD to open CWD/name
+      void FSread(int fd, char *data);                // read FD into data buffer
+      void FSclose(int fd);                           // close allocated fd (FD)
+
+5. Kernel()
+   add handling of 4 new cases
+
+6. tools.c/.h:
+   int MyStrlen(char *p);
+   // returns the length (# of bytes) of a string p points
+   // not counting the last null char
+
+   void MyStrcat(char *dst, char *addendum);
+   // append string addendum to string dst, both null-terminated
+
+   int MyStrcmp(char *p, char *q, int len);
+   // compare strings p and q point upto "len" bytes
+   // return 1 if same, otherwise 0
+
+   void MyStrcpy(char *dst, char *src) {
+   // copy from string "src" points to addr starting at "dst"
+      char ch;
+      ch = *src;
+      while(ch != '\0') {
+         *dst = ch;
+         dst++;
+         src++;
+         ch = *src;
+      }
+      *dst = '\0';
+   }
+
+   void MyMemcpy(char *dst, char *src, int size);
+   // copy "size" bytes from addr "src" to addr "dst"
+
+7. handlers.c/.h
+   add to .c the functions in the given handlers.txt
+   but add prototypes yourself to handlers.h
+         FSfindHandler();
+         FSopenHandler();
+         FSreadHandler();
+         FScloseHandler();
+
+8. void TermProc(void) {
+   int i, len, my_port;
+   char login_str[BUFF_SIZE], passwd_str[BUFF_SIZE],
+        cmd_str[BUFF_SIZE], cwd[BUFF_SIZE];
+
+   first, call PortAlloc() to allocate my_port
+
+   while-1 loop {
+      while-1 loop {
+         prompt and get login and password strings
+         if length of login string is 0 -> repeat this loop from beginning
+         if two strings have no equal length -> repeat this loop from beginning
+         check if password is reverse of login
+         if not, repeat this loop from beginning
+         if so, set cwd to "/" and break this loop
+      }
+      while-1 loop {
+         prompt and enter command string
+         if the length of command string is 0 -> just re-loop
+         if command string is "exit\0" is -> break this loop
+         if command string is "pwd\0" -> prompt cwd string to the terminal
+         else if command string is "cd " -> call subroutine TermCd
+         else if command string is "ls\0" -> call subroutine TermLs
+         else if command string is "cat " -> call subroutine TermCat
+         else prompt an error message about command not recognized (see demo)
+      }
+   }
+
+   // find dir "name" and thus change "cwd"
+   void TermCd(char *name, char *cwd, int my_port) {
+      char attr_data[BUFF_SIZE];
+      attr_t *attr_p;
+  
+      if length of name is 0 -> return;     // "cd " --> no changes
+      if name is ".\0" -> return;           // current dir, no changes
+      if name is "/\0" or name is "..\0" -> set cwd to "/" and return  // back to root
+
+      call FSfind(), given name, cwd, and attr_data (to be filled)
+
+      if length of attr_data is 0 -> prompt not-found to terminal and return
+
+      set attr_p to (attr_t *)attr_data    // cast data to attr ptr
+      if attr_p->mode is a file (not directory),
+         -> prompt "cannot cd a file" msg to terminal and return
+
+      add string name to string cwd
+   }
+
+   // TermCat gets file services to prompt file (cwd/name) to terminal
+   void TermCat(char *name, char *cwd, int my_port) {
+      char read_data[BUFF_SIZE], attr_data[BUFF_SIZE];
+      attr_t *attr_p;
+      int my_fd;
+
+      call FSfind(), given name, cwd, attr_data
+      if length of attr_data is 0 -> prompt not-found msg to terminal and return
+
+      set attr_p to (attr_t *)attr_data    // cast data to attr ptr
+      if attr_p->mode is a directory (not file),
+         -> prompt "cannot cat a directory" msg to terminal and return
+
+      call FSopen(), given name and cwd to get my_fd returned
+
+      while-1 loop {
+         call FSread(), given my_fd, and read_data (to be filled)
+         if length of read_data is 0 (EOF), break this loop
+         prompt read_data to terminal
+      }
+
+      call FSclose() with my_fd to close/return it
+   }
+
+   // TermLs gets file services to prompt dir content to terminal
+   void TermLs(char *cwd, int my_port) {
+      char ls_str[BUFF_SIZE], attr_data[BUFF_SIZE];
+      attr_t *attr_p;
+      int my_fd;
+
+      call FSfind(), given "", cwd, and attr_data (to be filled)
+      if length of attr_data is 0 -> prompt not-found msg to terminal and return
+
+      set attr_p to (attr_t *)attr_data    // cast data to attr ptr
+      if attr_p->mode is a file (not directory),
+         -> prompt "cannot ls a file" msg to terminal and return
+
+      call FSopen(), given "" and cwd to get my_fd returned
+
+      while-1 loop {
+         call FSread(), given my_fd, and attr_data (to be filled)
+         if length of attr_data is 0 (EOF), break this loop
+
+         set attr_p to (attr_t *)attr_data    // cast data to attr ptr
+         call Attr2Str() given attr_p and ls_str (to be filled)
+         prompt ls_str to terminal
+      }
+
+      call FSclose() with my_fd to close/return it
+   }
+
+   // make str from the attributes attr_p points
+   // str contains: attr_t and name (with p+1 to point to name)
+   void Attr2Str(attr_t *attr_p, char *str) {
+      char *name = (char *)(attr_p + 1);
+      sprintf(str, "     - - - -    SIZE %4d    NAME  %s\n\r", attr_p->size, name);
+      if ( A_ISDIR(attr_p->mode) ) str[5] = 'D';          // mode is directory
+      if ( QBIT_ON(attr_p->mode, A_ROTH) ) str[7] = 'R';  // mode is readable
+      if ( QBIT_ON(attr_p->mode, A_WOTH) ) str[9] = 'W';  // mode is writable
+      if ( QBIT_ON(attr_p->mode, A_XOTH) ) str[11] = 'X'; // mode is executable
+   }
+

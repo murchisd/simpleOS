@@ -22,5 +22,13 @@ extern unsigned short *ch_p;         //Used to check proccess and a sem
 
 //Phase 5
 extern port_t port[PORT_NUM];
-
+//Phase 6
+extern char help_txt_data[];
+extern char note_txt_data[];
+extern char index_html_data[];
+extern char hello_html_data[];
+extern dir_t bin_dir[4];
+extern dir_t www_dir[8];
+extern dir_t root_dir[11];
+extern fd_t fd_array[FD_NUM];
 #endif // ifndef __DATA_H__         ('name-mangling' prevention)

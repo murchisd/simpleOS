@@ -22,6 +22,10 @@
 #define PORTALLOC_EVENT 106
 #define PORTWRITE_EVENT 107
 #define PORTREAD_EVENT 108
+#define FSFIND_EVENT 109
+#define FSOPEN_EVENT 110
+#define FSREAD_EVENT 111
+#define FSCLOSE_EVENT 112
 
 #ifndef ASSEMBLER  // skip below if ASSEMBLER defined (from an assembly code)
                    // since below is not in assembler syntax
@@ -50,6 +54,12 @@ void PortEvent(void);
 void PortAllocEvent(void);
 void PortWriteEvent(void);
 void PortReadEvent(void);
+
+//Phase 6
+void FSfindEvent(void);
+void FSopenEvent(void);
+void FSreadEvent(void);
+void FScloseEvent(void);
 
 __END_DECLS
 

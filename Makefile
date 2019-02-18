@@ -331,7 +331,7 @@ $(MY_DLI) :	$(OBJECTS) Makefile
 #  Dependencies.
 #### YQYQYQ-MARK-2 ####
 #
-#  Dependencies generated Wed Mar  8 15:24:09 PST 2017 by (spede-mkmf $Revision: 1.2 $/1)
+#  Dependencies generated Sun Apr  9 20:43:29 PDT 2017 by (spede-mkmf $Revision: 1.2 $/1)
 #
 
 events.o: events.S \
@@ -395,7 +395,7 @@ proc.o: proc.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/string.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdlib.h \
  data.h types.h proc.h services.h
-services.o: services.c services.h
+services.o: services.c data.h types.h services.h
 tools.o: tools.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/flames.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
