@@ -58,7 +58,7 @@ OS_NAME = MyOS
 #       NOTE: Keep the spaces around the equals sign (=) please.
 #	If this changes, run "make depend" to update $OBJECTS.
 #
-SRC = events.S handlers.c main.c proc.c tools.c 
+SRC = events.S handlers.c main.c proc.c services.c tools.c 
 
 #
 #  (3) Add any compiler options you want.  They will be passed to gcc386
@@ -277,7 +277,7 @@ help ::
 #  List of object files.
 #### YQYQYQ-MARK-1 ####
 
-OBJECTS =  events.o handlers.o main.o proc.o tools.o
+OBJECTS =  events.o handlers.o main.o proc.o services.o tools.o
 
 #### YQYQYQ-STOP-1 ####
 #-------------------------------------
@@ -331,7 +331,7 @@ $(MY_DLI) :	$(OBJECTS) Makefile
 #  Dependencies.
 #### YQYQYQ-MARK-2 ####
 #
-#  Dependencies generated Wed Feb  8 21:29:56 PST 2017 by (spede-mkmf $Revision: 1.2 $/1)
+#  Dependencies generated Wed Feb 22 14:30:47 PST 2017 by (spede-mkmf $Revision: 1.2 $/1)
 #
 
 events.o: events.S \
@@ -375,7 +375,7 @@ main.o: main.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/string.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdlib.h \
- handlers.h types.h tools.h proc.h events.h
+ handlers.h types.h tools.h proc.h events.h services.h
 proc.o: proc.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/flames.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
@@ -394,7 +394,8 @@ proc.o: proc.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/string.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdlib.h \
- data.h types.h proc.h
+ data.h types.h proc.h services.h
+services.o: services.c services.h
 tools.o: tools.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/flames.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \

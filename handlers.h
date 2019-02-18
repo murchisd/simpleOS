@@ -7,5 +7,7 @@
 
 void NewProcHandler(func_ptr_t);
 void TimerHandler(void);
+void SleepHandler(void);
+void GetPidHandler(void);
 
 #endif

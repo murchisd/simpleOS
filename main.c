@@ -1,7 +1,7 @@
 // main.c, 159
 // this is kernel code for phase 1
 //
-// Team Name: ??????? (Members: ?????? and ??????)
+// Team Name: Athwal (Members: Donald Murchison and Brian Souza)
 
 #include "spede.h"      // given SPEDE stuff
 #include "handlers.h"   // handler code
@@ -9,12 +9,14 @@
 #include "proc.h"       // processes such as Init()
 #include "types.h"      // data types
 #include "events.h"     // events for kernel to serve
+#include "services.h"
 
 // kernel's own data:
 int current_pid;        // current selected PID; if 0, none selected
 q_t ready_q, free_q;    // processes ready to run and not used
 pcb_t pcb[PROC_NUM];    // process control blocks
 char proc_stack[PROC_NUM][PROC_STACK_SIZE]; // process runtime stacks
+int current_time;       //Current running time of OS
 
 void Scheduler() {         // choose a PID as current_pid to load/run
    if(current_pid!= 0){
@@ -39,19 +41,21 @@ int main() {
    struct i386_gate *IDT_p; // DRAM location where IDT is
 
    //use tool function MyBzero to clear the two PID queues
-   MyBzero(&ready_q,PROC_NUM);
-   MyBzero(free_q.q,PROC_NUM);
+   MyBzero((char*)&ready_q,PROC_NUM);
+   MyBzero((char*)free_q.q,PROC_NUM);
    //queue free queue with PID 1~19
    for(i=1;i<PROC_NUM;i++){
      EnQ(i,&free_q);
    }
    free_q.size=PROC_NUM;
-
+   current_time=0;
    //init IDT_p (locate IDT location)
    IDT_p = get_idt_base();
    cons_printf("IDT located at DRAM addr %x (%d).\n",&IDT_p,&IDT_p);
    //set IDT entry 32 like our timer lab
    fill_gate(&IDT_p[TIMER_EVENT],(int)TimerEvent,get_cs(),ACC_INTR_GATE,0);
+   fill_gate(&IDT_p[SLEEP_EVENT],(int)SleepEvent,get_cs(),ACC_INTR_GATE,0);
+   fill_gate(&IDT_p[GETPID_EVENT],(int)GetPidEvent,get_cs(),ACC_INTR_GATE,0);
    //set PIC mask to open up for timer IRQ0 only
    outportb(0x21, ~1);
    NewProcHandler(Init); //to create Init proc
@@ -74,6 +78,12 @@ void Kernel(TF_t *TF_p) {   // kernel code exec (at least 100 times/second)
          //call timer event handler
          //breakpoint();
          TimerHandler();
+         break;
+    case SLEEP_EVENT:
+         SleepHandler();
+         break;
+    case GETPID_EVENT:
+         GetPidHandler();
          break;
       default:
          cons_printf("Kernel Panic: unknown event_num %d!\n",TF_p->event_num);

@@ -6,6 +6,7 @@
 #include "spede.h"      // cons_xxx below needs
 #include "data.h"       // current_pid needed below
 #include "proc.h"       // prototypes of processes
+#include "services.h"
 
 // Init PID 1, always ready to run, never preempted
 void Init(void) {
@@ -21,12 +22,13 @@ void Init(void) {
 
 // PID 2, 3, 4, etc. mimicking a usual user process
 void UserProc(void) {
-   int i;
+   //int i;
 
    while(1) {
-      cons_printf("%d..", current_pid);// (will change to GetPID call later)
-      for(i=0;i<LOOP;i++){ // to cause approx 1 second of delay
-         asm("inb $0x80");// which delay .6 microsecond
-      }
+      cons_printf("%d..", GetPID());// (will change to GetPID call later)
+     // for(i=0;i<LOOP;i++){ // to cause approx 1 second of delay
+     //    asm("inb $0x80");// which delay .6 microsecond
+     // }
+      MySleep(GetPID());
    }
 }

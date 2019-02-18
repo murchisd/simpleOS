@@ -19,8 +19,8 @@ void NewProcHandler(func_ptr_t p) {  // arg: where process code starts
    
    pid = DeQ(&free_q);
    //get 'pid' from free_q
-   MyBzero(&pcb[pid],sizeof(pcb_t));
-   MyBzero(&proc_stack[pid], 4096);
+   MyBzero((char*)&pcb[pid],sizeof(pcb_t));
+   MyBzero((char*)&proc_stack[pid], 4096);
    //use MyBzero tool to clear the PCB (indexed by 'pid')
    //also, clear its runtime stack
    pcb[pid].state=READY;
@@ -29,7 +29,7 @@ void NewProcHandler(func_ptr_t p) {  // arg: where process code starts
    //queue 'pid' to be ready-to-run
 
    //point TF_p to highest area in stack (but has a space for a TF)
-   pcb[pid].TF_p = &proc_stack[pid][4032];
+   pcb[pid].TF_p = (TF_t*) &proc_stack[pid][4032];
    //then fill out the eip of the TF
    pcb[pid].TF_p->eip = (int)p;
    //the eflags in the TF becomes: EF_DEFAULT_VALUE|EF_INTR; // EFL will enable intr!
@@ -49,8 +49,10 @@ void NewProcHandler(func_ptr_t p) {  // arg: where process code starts
 
 // count cpu_time of running process and preempt it if reaching limit
 void TimerHandler(void) {
+   int i;
    //upcount cpu_time of the process (PID is current_pid)
    pcb[current_pid].cpu_time++;
+   current_time++;
    //cons_printf(" %d ", pcb[current_pid].cpu_time);
    if(pcb[current_pid].cpu_time==TIME_LIMIT){
       //update/downgrade its state
@@ -60,7 +62,23 @@ void TimerHandler(void) {
       //reset current_pid (to 0)  // no running PID anymore
       current_pid=0;
    }
+   for(i=0;i<PROC_NUM;i++){
+     if(pcb[i].state == SLEEP && pcb[i].wake_time==current_time){
+        EnQ(i,&ready_q);
+        pcb[i].state=READY;
+     }
+   }
    outportb(0x20, 0x60);
    //Don't forget: notify PIC event-handling done 
 }
 
+void SleepHandler(void){
+  int sleep = pcb[current_pid].TF_p->eax;
+  pcb[current_pid].wake_time = current_time + 100 * sleep;
+  pcb[current_pid].state = SLEEP;
+  current_pid=0;
+}
+
+void GetPidHandler(void){
+  pcb[current_pid].TF_p->eax = current_pid;
+}

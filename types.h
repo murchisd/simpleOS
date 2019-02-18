@@ -3,7 +3,6 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
 
-//#define LOOP 166666
 #define LOOP 1666666         // handly loop limit exec asm("inb $0x80");
 #define TIME_LIMIT 200 
 //#define TIME_LIMIT 200       // max timer count, then rotate process
@@ -48,6 +47,7 @@ typedef struct {             // PCB describes proc image
    state_t state;            // state of process
    int cpu_time;             // CPU runtime
    TF_t *TF_p;               // points to trapframe of process
+   int wake_time;            // if current_time == then wake up
 } pcb_t;
 
 typedef struct {             // generic queue type
