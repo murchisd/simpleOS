@@ -34,10 +34,6 @@ void Scheduler() {         // choose a PID as current_pid to load/run
    current_pid = DeQ(&ready_q);
    //update its state
    pcb[current_pid].state=RUN;
-   if(current_pid>9){
-      ch_p[current_pid*80+39] = 0xf00 + 0x30 + (current_pid/10);
-   }
-   ch_p[current_pid*80+40] = 0xf00 + 0x30 + (current_pid%10);     // show Pid
    ch_p[current_pid*80+42] = 0xf00 + 'R'; 
    //reset cpu_time count
    pcb[current_pid].cpu_time=0;
@@ -69,6 +65,7 @@ int main() {
    fill_gate(&IDT_p[SEMALLOC_EVENT],(int)SemAllocEvent,get_cs(),ACC_INTR_GATE,0);
    fill_gate(&IDT_p[SEMWAIT_EVENT],(int)SemWaitEvent,get_cs(),ACC_INTR_GATE,0);
    fill_gate(&IDT_p[SEMPOST_EVENT],(int)SemPostEvent,get_cs(),ACC_INTR_GATE,0);
+   fill_gate(&IDT_p[SYSPRINT_EVENT],(int)SysPrintEvent,get_cs(),ACC_INTR_GATE,0);
    //set PIC mask to open up for timer IRQ0 only
    outportb(0x21, ~1);
    NewProcHandler(Init); //to create Init proc
@@ -79,7 +76,6 @@ int main() {
 }
 
 void Kernel(TF_t *TF_p) {   // kernel code exec (at least 100 times/second)
-   char key;
    //breakpoint();
    //save TF_P into the PCB of current_pid
    pcb[current_pid].TF_p = TF_p;
@@ -107,30 +103,14 @@ void Kernel(TF_t *TF_p) {   // kernel code exec (at least 100 times/second)
     case SEMPOST_EVENT:
          SemPostHandler(TF_p->eax);
          break;
+    case SYSPRINT_EVENT:
+         SysPrintHandler((char *)TF_p->eax);
+         break;
       default:
          cons_printf("Kernel Panic: unknown event_num %d!\n",TF_p->event_num);
          breakpoint();
    }
 
-   if(cons_kbhit()){//a key is pressed on Target PC {
-      key = cons_getchar();
-      //get the key
-
-      //switch by the key obtained {
-      switch(key){
-         //if it's 'n'
-         case 'n':
-            //call NewProcHandler to create UserProc
-            NewProcHandler(UserProc);
-            break;
-         //if it's 'b'
-         case 'v':
-            NewProcHandler(Vehicle);
-            break;
-         case 'b':
-            breakpoint();
-     }
-   }
 
    Scheduler();// to select current_pid (if needed)
    Loader(pcb[current_pid].TF_p); //with the TF address of current_pid

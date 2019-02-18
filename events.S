@@ -60,3 +60,7 @@ ENTRY(SemWaitEvent)
 ENTRY(SemPostEvent)
   pushl $SEMPOST_EVENT
   jmp CommonPart
+
+ENTRY(SysPrintEvent)
+  pushl $SYSPRINT_EVENT
+  jmp CommonPart

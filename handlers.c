@@ -62,10 +62,6 @@ void TimerHandler(void) {
    if(pcb[current_pid].cpu_time==TIME_LIMIT){
       //update/downgrade its state
       pcb[current_pid].state = READY;
-      if(current_pid>9){
-          ch_p[current_pid*80+39] = 0xf00 + 0x30 + (current_pid/10);
-      }
-      ch_p[current_pid*80+40] = 0xf00 + 0x30 + (current_pid%10);     // show Pid
       ch_p[current_pid*80+42] = 0xf00 + 'r';
       //queue its PID back to ready-to-run PID queue
       EnQ(current_pid,&ready_q);
@@ -76,10 +72,6 @@ void TimerHandler(void) {
      if(pcb[i].state == SLEEP && pcb[i].wake_time==current_time){
         EnQ(i,&ready_q);
         pcb[i].state=READY;
-        if(i>9){
-          ch_p[i*80+39] = 0xf00 + 0x30 + (i/10);
-        }
-        ch_p[i*80+40] = 0xf00 + 0x30 + (i%10);     // show Pid
         ch_p[i*80+42] = 0xf00 + 'r';
      }
    }
@@ -91,10 +83,6 @@ void SleepHandler(void){
   int sleep = pcb[current_pid].TF_p->eax;
   pcb[current_pid].wake_time = current_time + 100 * sleep;
   pcb[current_pid].state = SLEEP;
-  if(current_pid>9){
-      ch_p[current_pid*80+39] = 0xf00 + 0x30 + (current_pid/10);
-  }
-  ch_p[current_pid*80+40] = 0xf00 + 0x30 + (current_pid%10);     // show Pid
   ch_p[current_pid*80+42] = 0xf00 + 'S';
   current_pid=0;
 }
@@ -128,10 +116,6 @@ void SemWaitHandler(int sid){
   else{
     EnQ(current_pid,&(sem[sid].wait_q));
     pcb[current_pid].state=WAIT;
-    if(current_pid>9){
-      ch_p[current_pid*80+39] = 0xf00 + 0x30 + (current_pid/10);
-    }
-    ch_p[current_pid*80+40] = 0xf00 + 0x30 + (current_pid%10);     // show Pid
     ch_p[current_pid*80+42] = 0xf00 + 'W';
     current_pid=0;
   }
@@ -146,11 +130,42 @@ void SemPostHandler(int sid){
   else{
     EnQ(pid, &ready_q);
     pcb[pid].state=READY;
-    if(pid>9){
-      ch_p[pid*80+39] = 0xf00 + 0x30 + (pid/10);
-    }
-    ch_p[pid*80+40] = 0xf00 + 0x30 + (pid%10);     // show Pid
     ch_p[pid*80+42] = 0xf00 + 'r';
   }
 }
 
+void SysPrintHandler(char *p){
+   int i, code;
+
+   const int printer_port = 0x378;                // I/O mapped # 0x378
+   const int printer_data = printer_port + 0;     // data register
+   const int printer_status = printer_port + 1;   // status register
+   const int printer_control = printer_port + 2;  // control register
+
+// initialize printer port (check printer power, cable, and paper)
+   outportb(printer_control, 16);             // 1<<4 is PC_SLCTIN
+   code = inportb(printer_status);            // read printer status
+   for(i=0; i<50; i++) asm("inb $0x80");      // needs some delay
+   outportb(printer_control, 4 | 8 );         // 1<<2 is PC_INIT, 1<<3 PC_SLCTIN
+
+   while(*p) {
+      outportb(printer_data, *p);             // write char to printer data
+      code = inportb(printer_control);        // read printer control
+      outportb(printer_control, code | 1);    // 1<<0 is PC_STROBE
+      for(i=0; i<50; i++) asm("inb $0x80");   // needs some delay
+      outportb(printer_control, code);        // send original (cancel strobe)
+
+      for(i = 0; i < LOOP*3; i++) {           // 3 seconds at most
+         code = inportb(printer_status) & 64; // 1<<6 is PS_ACK
+         if(code == 0) break;                 // printer ACK'ed
+         asm("inb $0x80");                    // otherwise, wait 0.6 us, and loop
+      }
+
+      if(i == LOOP*3) {                        // if 3 sec did pass (didn't ACK)
+         cons_printf(">>> Printer timed out!\n");
+         break;   // abort printing
+      }
+
+      p++;        // move to print next character
+   }
+}

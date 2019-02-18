@@ -11,6 +11,8 @@
 #define K_STACK_SIZE 16384  // kernel runtime stack byte size
 
 #define TIMER_EVENT 32      // IDT entry #32, aka IRQ0, for timer device
+#define SYSPRINT_EVENT 105  // 105 for now IRQ is for interrupt driven
+			    // IDT entry #39, aka IRQ7, for print device
 #define GETPID_EVENT 100    // IDT entry #100 for get pid kernel service
 #define SLEEP_EVENT 101     // IDT entry #101 for sleep kernel service
 #define SEMALLOC_EVENT 102  // IDT entry #102 for sem allocate service
@@ -25,6 +27,7 @@ __BEGIN_DECLS
 
 void TimerEvent(void);      // coded in events.S, assembler won't like this syntax
 void SleepEvent(void);
+void SysPrintEvent(void);
 void GetPidEvent(void);
 void SemAllocEvent(void);
 void SemWaitEvent(void);

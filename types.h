@@ -3,10 +3,9 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
 
-//#define LOOP 1666666         // handly loop limit exec asm("inb $0x80");
-#define LOOP 166666
+#define LOOP 1666666         // handly loop limit exec asm("inb $0x80");
+//#define LOOP 166666
 #define TIME_LIMIT 200 
-//#define TIME_LIMIT 200       // max timer count, then rotate process
 #define PROC_NUM 20          // max number of processes
 #define Q_SIZE 20            // queuing capacity
 #define PROC_STACK_SIZE 4096 // process runtime stack in bytes
