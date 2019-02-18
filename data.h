@@ -38,4 +38,7 @@ extern mem_page_t mem_page[MEM_PAGE_NUM];
 //Phase 8
 extern int kernel_MMU;
 
+//Phase 9
+extern q_t PF_q;         // ready-to-run PID's, and un-used PID's
+
 #endif // ifndef __DATA_H__         ('name-mangling' prevention)

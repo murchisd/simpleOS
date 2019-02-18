@@ -29,6 +29,7 @@
 #define FORK_EVENT 113
 #define WAIT_EVENT 114
 #define EXIT_EVENT 115
+#define PF_EVENT 14
 
 #ifndef ASSEMBLER  // skip below if ASSEMBLER defined (from an assembly code)
                    // since below is not in assembler syntax
@@ -69,6 +70,8 @@ void ForkEvent(void);
 void WaitEvent(void);
 void ExitEvent(void);
 
+//Phase 9
+void PFEvent(void);
 __END_DECLS
 
 #endif // ifndef ASSEMBLER

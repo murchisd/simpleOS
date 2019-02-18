@@ -57,6 +57,7 @@ void TermProc(void) {
      exit_num =0;
        while(1){
            //prompt and get login and password strings
+           PortWrite("\n\r",my_port);
            PortWrite(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\r",my_port);
            PortWrite("Team Athwal Login:",my_port);
            PortRead(login_str,my_port);
@@ -128,10 +129,8 @@ int TermBin(char *name, char *cwd, int my_port){
        return -1;
    }
    child_pid = Fork(attr_p->data);
-   //sprintf(str,"%d (0x%x)\n\r",child_pid,child_pid);
    sprintf(str,"         Forked Child PID %d!\n\r",child_pid);
    PortWrite(str,my_port);
-   MySleep(4);
    return Wait();
 }    
 

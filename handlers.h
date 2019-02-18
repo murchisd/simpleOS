@@ -44,4 +44,7 @@ void FScloseHandler(void);
 void ForkHandler(char *bin_code, int *child_pid);
 void WaitHandler(int *exit_num_p);
 void ExitHandler(int exit_num);
+
+//Phase 9
+void PF_Handler(void);
 #endif

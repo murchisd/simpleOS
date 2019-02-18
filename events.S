@@ -18,20 +18,23 @@ ENTRY(Loader)       // loads the trapframe of the selected process in order to r
   popl %es
   popl %ds                    
   popa                      // pop all
-  addl $4, %esp              // skip timer event
+  addl $8, %esp              // skip timer event
   iret                      // pop eip, cs, eflags
 
 // push event_num then go into kernel
 ENTRY(TimerEvent)           // push eflags, cs, eip (by circuit)
+   pushl $0
    pushl $TIMER_EVENT      
    jmp CommonPart
 
 //Phase 2
 ENTRY(SleepEvent)
+   pushl $0
   pushl $SLEEP_EVENT
   jmp CommonPart
 
 ENTRY(GetPidEvent)
+   pushl $0
   pushl $GETPID_EVENT
   jmp CommonPart
 
@@ -50,65 +53,85 @@ CommonPart:
 
 //Phase 3
 ENTRY(SemAllocEvent)
+   pushl $0
   pushl $SEMALLOC_EVENT
   jmp CommonPart
 
 ENTRY(SemWaitEvent)
+   pushl $0
   pushl $SEMWAIT_EVENT
   jmp CommonPart
 
 ENTRY(SemPostEvent)
+   pushl $0
   pushl $SEMPOST_EVENT
   jmp CommonPart
 
 //Phase 4
 ENTRY(SysPrintEvent)
+   pushl $0
   pushl $SYSPRINT_EVENT
   jmp CommonPart
 
 //Phase 5
 ENTRY(PortEvent)
+   pushl $0
   pushl $PORT_EVENT
   jmp CommonPart
 
 ENTRY(PortAllocEvent)
+   pushl $0
   pushl $PORTALLOC_EVENT
   jmp CommonPart
 
 ENTRY(PortWriteEvent)
+   pushl $0
   pushl $PORTWRITE_EVENT
   jmp CommonPart
 
 ENTRY(PortReadEvent)
+   pushl $0
   pushl $PORTREAD_EVENT
   jmp CommonPart
 
 //Phase 6
 ENTRY(FSfindEvent)
+   pushl $0
   pushl $FSFIND_EVENT
   jmp CommonPart
 
 ENTRY(FSopenEvent)
+   pushl $0
   pushl $FSOPEN_EVENT
   jmp CommonPart
 
 ENTRY(FSreadEvent)
+   pushl $0
   pushl $FSREAD_EVENT
   jmp CommonPart
 
 ENTRY(FScloseEvent)
+   pushl $0
   pushl $FSCLOSE_EVENT
   jmp CommonPart
 
 //Phase 7
 ENTRY(ForkEvent)
+   pushl $0
   pushl $FORK_EVENT
   jmp CommonPart
 
 ENTRY(WaitEvent)
+   pushl $0
   pushl $WAIT_EVENT
   jmp CommonPart
 
 ENTRY(ExitEvent)
+   pushl $0
   pushl $EXIT_EVENT
+  jmp CommonPart
+
+//Phase 9
+ENTRY(PFEvent)
+  pushl $PF_EVENT
   jmp CommonPart

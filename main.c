@@ -1,5 +1,5 @@
 // main.c, 159
-// This is kernel code for phase 8
+// This is kernel code for phase 9
 //
 // Team Name: Athwal (Members: Donald Murchison and Brian Souza)
 
@@ -14,7 +14,7 @@
 
 // kernel's own data:
 int current_pid;        // current selected PID; if 0, none selected
-q_t ready_q, free_q;    // processes ready to run and not used
+q_t ready_q, free_q, PF_q;    // processes ready to run and not used
 pcb_t pcb[PROC_NUM];    // process control blocks
 char proc_stack[PROC_NUM][PROC_STACK_SIZE]; // process runtime stacks
 int current_time;       //Current running time of OS
@@ -109,13 +109,15 @@ int main() {
    fill_gate(&IDT_p[FORK_EVENT],(int)ForkEvent,get_cs(),ACC_INTR_GATE,0); //Phase 7
    fill_gate(&IDT_p[WAIT_EVENT],(int)WaitEvent,get_cs(),ACC_INTR_GATE,0); //Phase 7
    fill_gate(&IDT_p[EXIT_EVENT],(int)ExitEvent,get_cs(),ACC_INTR_GATE,0); //Phase 7
+   
+   fill_gate(&IDT_p[PF_EVENT],(int)PFEvent,get_cs(),ACC_INTR_GATE,0); //Phase 7
    outportb(0x21, ~(1+8+16));      //set PIC mask to open up for timer IRQ0 only
    NewProcHandler(Init);    //to create Init proc
 
    NewProcHandler(TermProc); 
    NewProcHandler(TermProc);
    Scheduler();             //to select current_pid (will be 1)
-   //set_cr3(pcb[current_pid].MMU);
+
    Loader(pcb[current_pid].TF_p);// TF address of current_pid
 
    return 0; // compiler needs for syntax altho this statement is never exec
@@ -180,6 +182,9 @@ void Kernel(TF_t *TF_p) {   // kernel code exec (at least 100 times/second)
       break;
     case EXIT_EVENT:
       ExitHandler(TF_p->eax);
+      break;
+    case PF_EVENT:
+      PF_Handler();
       break;
     default:
          cons_printf("Kernel Panic: unknown event_num %d!\n",TF_p->event_num);

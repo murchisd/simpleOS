@@ -7,7 +7,7 @@ Name             Origin             Length
 Linker script and memory map
 
 Address of section .text set to 0x1000080
-LOAD printer_msg.o
+LOAD PF_test.o
 LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu/2.7.2.3/libgcc.a
 LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/lib/libi386.a
 LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu/2.7.2.3/libgcc.a
@@ -93,7 +93,7 @@ LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu
 
 .text           0x01000080       0x15
  *(.text)
- .text          0x01000080       0x15 printer_msg.o
+ .text          0x01000080       0x15 PF_test.o
                 0x01000080                _start
  *(.gnu.warning)
                 0x01000095                _etext=.
@@ -109,9 +109,8 @@ LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu
  *(.rodata1)
                 0x01000095                .=.
 
-.data           0x01000098       0x23
+.data           0x01000098        0x0
  *(.data)
- .data          0x01000098       0x23 printer_msg.o
 
 .data1
  *(.data1)
@@ -131,20 +130,20 @@ LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu
 
 .sdata
  *(.sdata)
-                0x010000bb                _edata=.
-                0x010000bb                PROVIDE (edata, .)
-                0x010000bb                __bss_start=.
+                0x01000098                _edata=.
+                0x01000098                PROVIDE (edata, .)
+                0x01000098                __bss_start=.
 
 .sbss
  *(.sbss)
  *(.scommon)
 
-.bss            0x010000bc        0x0
+.bss            0x01000098        0x0
  *(.dynbss)
  *(.bss)
  *(COMMON)
-                0x010000bc                _end=.
-                0x010000bc                PROVIDE (end, .)
+                0x01000098                _end=.
+                0x01000098                PROVIDE (end, .)
 
 .stab
  *(.stab)
@@ -184,4 +183,4 @@ LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu
 
 .line
  *(.line)
-OUTPUT(printer_msg elf32-i386)
+OUTPUT(PF_test elf32-i386)

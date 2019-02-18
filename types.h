@@ -44,10 +44,11 @@ typedef struct {
 	unsigned int	eax; 
  
 	unsigned int	event_num; // indicate what event occurred
+  unsigned int error_num;
  
 	unsigned int	eip; // processor state frame below
 	unsigned int	cs; 
-	unsigned int	eflags; 
+	unsigned int	eflags;
 } TF_t;  // trapframe type
  
 typedef void (*func_ptr_t)(); // void-return function pointer type
@@ -62,6 +63,7 @@ typedef struct {             // PCB describes proc image
    int wake_time;            // if current_time == then wake up
    int ppid;
    int MMU;
+   unsigned int PF_addr;
 } pcb_t;
 
 typedef struct {             // generic queue type

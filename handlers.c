@@ -10,7 +10,6 @@
 // to create process, alloc PID, PCB, and stack space
 // build TF into stack, set PCB, register PID to ready_q
 void NewProcHandler(func_ptr_t p) {  // arg: where process code starts
-
 //Phase 1
    int pid;
 
@@ -535,19 +534,6 @@ void ForkHandler(char *bin_code, int *child_pid){
    int i, got, page_got[5];
    TF_t *TF_p;                                                 // local ptr, use below
    char *main_table, *code_table, *stack_table, *code_page, *stack_page; // easy naming
-/*   A. try to locate 5 free memory pages:
-   set 'got' to 0
-
-   loop i thru mem_page[i]
-      if owner is 0)
-         page_got[got++] = i  // got 1 page index
-         if 'got' enough (becomes 5), break loop
-
-   if didn't get 5
-      cons_printf("Kernel Panic: not enough memory pages available!\n");
-      set 0 as what child_pid points
-      return (end this handler)
-*/
    got = 0;
    for( i=0; i <MEM_PAGE_NUM; i++) {
        if(mem_page[i].owner == 0) {
@@ -560,46 +546,21 @@ void ForkHandler(char *bin_code, int *child_pid){
        *child_pid = 0;
        return;
    }
-/* B. if free_q.size is 0
-      cons_printf("Kernel Panic: no PID available!\n");
-      set 0 as what child_pid points
-      return (end this handler)
-*/
    if(free_q.size == 0) {
        cons_printf("Kernel Panic: no PID available!\n");
        *child_pid = 0;  // no PID can be returned
        return;
    }
-/* C. set the better-named addresses (char *) from the 5 allocated memory pages:
-      main_table = address of the 1st DRAM page allocated
-      code_table = ... 2nd ...
-      stack_table = ... 3rd ...
-      code_page = ... 4th ...
-      stack_page = ... 5th ...
-*/
    main_table = (char *)mem_page[page_got[0]].addr;
    code_table = (char *)mem_page[page_got[1]].addr;
    stack_table = (char *)mem_page[page_got[2]].addr;
    code_page = (char *)mem_page[page_got[3]].addr;
    stack_page = (char *)mem_page[page_got[4]].addr;
-/* D. get a new PID (set it as what child_pid now points) from free_q
-
-   loop 'got' from 0 to 4:
-      set the owner of memory pages (indexed by page_got[got]) to the new pid
-      clear the same memory page
-
-   clear its PCB
-   enqueue its PID to ready_q
-   update its state
-   update its ppid, too
-   set its TF_p to 2G (0x80000000) - size of trapframe type  <------- ***
-   set the MMU in the PCB of the new process to main_table <------- ***
-*/
 
    *child_pid = DeQ(&free_q);
    for( i=0; i <5; i++) {
        mem_page[page_got[i]].owner = *child_pid;
-	   MyBzero((char *)mem_page[page_got[i]].addr, MEM_PAGE_SIZE);
+	     MyBzero((char *)mem_page[page_got[i]].addr, MEM_PAGE_SIZE);
    }
    MyBzero((char*)&pcb[*child_pid], sizeof(pcb_t));  
    EnQ(*child_pid, &ready_q);
@@ -609,12 +570,7 @@ void ForkHandler(char *bin_code, int *child_pid){
    //set the MMU in the PCB of the new process to main_table <------- ***
    pcb[*child_pid].TF_p = (TF_t *)(0x80000000 - sizeof(TF_t));
    pcb[*child_pid].MMU = (int)main_table;
-// E. copy the code into code_page (from the given argument)
    MyMemcpy((char *)code_page, (char *)bin_code, MEM_PAGE_SIZE);
-/* F. set local variable TF_p to stack_page + MEM_PAGE_SIZE - sizeof(TF_t) <------- ***
-   set TF_p->EIP of TF to 1G (0x40000000)                          <------- ***
-   set rest of TF_p->xxx the same way as before
-*/
    TF_p = (TF_t *)(stack_page + MEM_PAGE_SIZE  - sizeof(TF_t)); 
    TF_p->eip = 0x40000000;
    TF_p->eflags = EF_DEFAULT_VALUE|EF_INTR;
@@ -624,62 +580,20 @@ void ForkHandler(char *bin_code, int *child_pid){
    TF_p->fs = get_fs();
    TF_p->gs = get_gs();
 
-/*G. MyMemcpy 1st 4 entries from kernel_MMU into main_table
-   Set entries 256 of main_table to code_table (bitwise-OR the two flags)
-   Set entries 511 of main_table to stack_table (bitwise-OR the two flags)
-   set entry 0 in code_table to code_page (bitwise-OR the two flags)
-  set entry 1023 in stack_table to stack_page (bitwise-OR the two flags)
- */
-   //Not sure here, I think each entry is 4 bytes so copy 4*4*8 for first four entries 
     MyMemcpy((char *)main_table, (char *)kernel_MMU, 16);
     MyMemcpy((char *)&main_table[4*256],(char *)&code_table, 4);
-    main_table[4*256] = (int)main_table[4*256] | 0x3;
-    //main_table[256] = code_table|0x3;
-    //main_table[511] = stack_table + 0x3;
+    main_table[4*256] = 0x3 | main_table[4*256];
     MyMemcpy((char *)&main_table[4*511],(char *)&stack_table,4);
-    main_table[4*511]= (int)main_table[4*511]|0x3;
-    //code_table[0] = mem_page[3].addr + 0x3;
+    main_table[4*511]=0x3|main_table[4*511];
     MyMemcpy((char *)&code_table[0], (char *)&code_page,4);
-    code_table[0]=(int)code_table[0] | 0x3;
-    //stack_table[1023] = mem_page[4].addr + 0x3;
+    code_table[0]=0x3|code_table[0];
     MyMemcpy((char *)&stack_table[4*1023],(char *)&stack_page,4);
-    stack_table[4*1023]=(int)stack_table[4*1023] | 0x3;
- /*  
-   for( i=0; i <MEM_PAGE_NUM ; i++) {
-       if(mem_page[i].owner == 0) break;
-   }
-   if(i == MEM_PAGE_NUM) {
-       cons_printf("Kernel Panic: no memory page available!\n");
-       *child_pid = 0;
-       return;
-   }
-   if(free_q.size == 0) {
-       cons_printf("Kernel Panic: no PID available!\n");
-       *child_pid = 0;  // no PID can be returned
-       return;
-   }
-   *child_pid = DeQ(&free_q);
-   EnQ(*child_pid, &ready_q);
-   MyBzero((char*)&pcb[*child_pid], sizeof(pcb_t));  
-   pcb[*child_pid].state = READY;
-   pcb[*child_pid].ppid = current_pid;
-   MyBzero((char *)mem_page[i].addr, MEM_PAGE_SIZE);
-   mem_page[i].owner = *child_pid;
-   MyMemcpy((char *)mem_page[i].addr, (char *)bin_code, MEM_PAGE_SIZE);
-   
-   pcb[*child_pid].TF_p = (TF_t *)(mem_page[i].addr + MEM_PAGE_SIZE  - sizeof(TF_t)); 
-   pcb[*child_pid].TF_p->eip = (int)mem_page[i].addr;
-   pcb[*child_pid].TF_p->eflags = EF_DEFAULT_VALUE|EF_INTR;
-   pcb[*child_pid].TF_p->cs = get_cs();
-   pcb[*child_pid].TF_p->ds = get_ds();
-   pcb[*child_pid].TF_p->es = get_es();
-   pcb[*child_pid].TF_p->fs = get_fs();
-   pcb[*child_pid].TF_p->gs = get_gs();
-*/
+    stack_table[4*1023]=0x3|stack_table[4*1023];
+
 }
 
 void WaitHandler(int *exit_num_p){
-   int child_pid, page_index;
+   int child_pid, page_index, i, tmp;
    for(child_pid=0; child_pid<PROC_NUM; child_pid++) {
        if(pcb[child_pid].ppid == current_pid && pcb[child_pid].state == ZOMBIE) break;
    }
@@ -696,11 +610,18 @@ void WaitHandler(int *exit_num_p){
    for( page_index=0; page_index <MEM_PAGE_NUM ; page_index++) {
        if(mem_page[page_index].owner == child_pid) mem_page[page_index].owner=0;
    }
-
+   if(PF_q.size != 0) {
+       for(i=0;i<5;i++){
+	tmp = DeQ(&PF_q);
+        if(tmp==0) break;
+	EnQ(tmp,&ready_q);
+	pcb[tmp].state=READY;
+       }
+   }
 }
 
 void ExitHandler(int exit_num){
-   int ppid, *exit_num_p, page_index;
+   int ppid, *exit_num_p, page_index, i, tmp;
     
     ppid = pcb[current_pid].ppid;
     if(pcb[ppid].state!=WAIT){
@@ -717,9 +638,81 @@ void ExitHandler(int exit_num){
     for(page_index=0; page_index <MEM_PAGE_NUM ; page_index++) {
        if(mem_page[page_index].owner == current_pid) mem_page[page_index].owner=0;
     }
+    //DeQ 5 pages from PF_q
+    //if some need more than one page they will be re Queued
+    if(PF_q.size != 0) {
+      for(i=0;i<5;i++){
+	tmp = DeQ(&PF_q);
+        if(tmp==0) break;
+	EnQ(tmp,&ready_q);
+	pcb[tmp].state=READY;
+       }
+    }	
     EnQ(current_pid, &free_q);
     pcb[current_pid].state = FREE;
     current_pid=0;
     set_cr3(kernel_MMU);
 
+}
+
+void PF_Handler(void) {
+   int i;
+   unsigned int fault_addr, main_addr, sub_addr;
+   int * main_table_addr;
+   int *sub_table, *runtime_page; 
+   
+   main_table_addr = (int *)pcb[current_pid].MMU;
+   fault_addr = (unsigned int) get_cr2(); 
+   main_addr = (fault_addr >> 22);
+   sub_addr = (fault_addr >> 12)&0x3ff;
+   
+   //Set runtime_page to entry - clear flags so we can use as table if valid
+   sub_table =(int *)((int)main_table_addr[main_addr]&0xfffff000);
+   //Check if the entry had flags set before clearing
+   //If not get a new mem page addr and overwrite value in runtime_page
+   if(!(main_table_addr[main_addr] & 0x1)){ 
+       for( i=0; i <MEM_PAGE_NUM; i++) {
+          if(mem_page[i].owner == 0) {
+            sub_table = (int *)mem_page[i].addr;
+            //Set the new page as entry in maintable with flags
+	          main_table_addr[main_addr]=(int)sub_table|0x3;
+            mem_page[i].owner = current_pid;
+	          MyBzero((char *)mem_page[i].addr, MEM_PAGE_SIZE);
+	    break; 	
+          }
+       }
+
+       if(i ==  MEM_PAGE_NUM) {
+          EnQ(current_pid, &PF_q);
+          pcb[current_pid].PF_addr = fault_addr;
+          pcb[current_pid].state = WAIT;
+          current_pid = 0;
+          return;
+      }
+   }
+
+
+   //Set sub_table to entry in runtimepage - clear flags so we can use as table if valid
+   runtime_page =(int *)((int)sub_table[sub_addr]&0xfffff000);
+   //Check if the entry had flags set before clearing
+   //If not get a new mem page addr and overwrite value in runtime_page
+   if(!(sub_table[sub_addr] & 0x1)){ 
+       for( i=0; i <MEM_PAGE_NUM; i++) {
+          if(mem_page[i].owner == 0) {
+            runtime_page = (int *)mem_page[i].addr;
+	          sub_table[sub_addr]=(int)runtime_page|0x3;
+            mem_page[i].owner = current_pid;
+	          MyBzero((char *)mem_page[i].addr, MEM_PAGE_SIZE);
+	    break; 	
+          }
+       }
+
+       if(i ==  MEM_PAGE_NUM) {
+          EnQ(current_pid, &PF_q);
+          pcb[current_pid].PF_addr = fault_addr;
+          pcb[current_pid].state = WAIT;
+          current_pid = 0;
+          return;
+      }
+   }
 }

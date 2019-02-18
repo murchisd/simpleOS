@@ -67,6 +67,11 @@ char printer_msg[]={
 };
 #define PRINTER_MSG_SIZE (sizeof(printer_msg))
 
+char PF_test[]={
+  #include "bin-code/PF_test.txt"
+};
+#define PF_TEST_SIZE (sizeof(PF_test))
+
 // We'll define "root_dir[]" later. Here is a forward declare.
 extern dir_t root_dir[];                         // prototype it in advance
 
@@ -76,6 +81,7 @@ dir_t bin_dir[] = {
    {18, MODE_EXEC, SLEEP3_SIZE, "sleep3", (char *)sleep3},
 
    {19, MODE_EXEC, PRINTER_MSG_SIZE, "printer_msg", (char *)printer_msg},
+   {20, MODE_EXEC, PF_TEST_SIZE, "PF_test", (char *)PF_test},
    {0,0,0,NULL,NULL},
    {END_INODE, 0, 0, NULL, NULL}
 };
