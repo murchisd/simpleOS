@@ -5,31 +5,31 @@
 #include "services.h"
 //Phase 2
 void MySleep(int time){
-  asm("pushl %%eax;
-      movl %0, %%eax;
-      int $101;
-      popl %%eax"
-      :
-      : "g"(time)
-      );
+   asm("pushl %%eax;
+       movl %0, %%eax;
+       int $101;
+       popl %%eax"
+       :
+       : "g"(time)
+       );
 }
 
 int GetPID(void){
-  int pid;
-  asm("pushl %%eax;
-      int $100;
-      movl %%eax, %0;
-      popl %%eax"
-      : "=g" (pid)
-      :
-      );
-  return pid;
+   int pid;
+   asm("pushl %%eax;
+       int $100;
+       movl %%eax, %0;
+       popl %%eax"
+       : "=g" (pid)
+       :
+       );
+   return pid;
 }
 
 //Phase 3
 int SemAlloc(int passes){
-  int sid;
-  asm("pushl %%eax; 
+   int sid;
+   asm("pushl %%eax; 
        pushl %%ebx;
        movl %1, %%eax;
        int $102;
@@ -39,11 +39,11 @@ int SemAlloc(int passes){
        : "=g" (sid)
        : "g" (passes)
        );
-  return sid;
+   return sid;
 }
 
 void SemWait(int sid){
-  asm("pushl %%eax;
+   asm("pushl %%eax;
        movl %0, %%eax;
        int $103;
        popl %%eax;"
@@ -53,7 +53,7 @@ void SemWait(int sid){
 }
 
 void SemPost(int sid){
-  asm("pushl %%eax;
+   asm("pushl %%eax;
        movl %0, %%eax;
        int $104;
        popl %%eax;"
@@ -64,7 +64,7 @@ void SemPost(int sid){
 
 //Phase 4
 void SysPrint(char *str_to_print){
-  asm("pushl %%eax;
+   asm("pushl %%eax;
        movl %0, %%eax;
        int $105;
        popl %%eax;"
@@ -87,6 +87,7 @@ int PortAlloc(void) { // request a serial port # to read/write
    
    port[port_num].write_sid = SemAlloc(20);
    port[port_num].read_sid = SemAlloc(0);
+   port[port_num].read_q.size=0;
    return port_num;
 }
 
@@ -137,15 +138,15 @@ void FSfind(char *name, char *cwd, char *data){ // find CWD/name, return attr da
    MyStrcpy(tmp, cwd);
    MyStrcat(tmp, name);
    asm("pushl %%eax;
-        pushl %%ebx;
-        movl %0, %%eax;
-        movl %1, %%ebx;
-        int $109;
-        popl %%ebx;
-        popl %%eax;"
-        :
-        : "g" ((int)tmp), "g"((int)data)
-        );
+       pushl %%ebx;
+       movl %0, %%eax;
+       movl %1, %%ebx;
+       int $109;
+       popl %%ebx;
+       popl %%eax;"
+       :
+       : "g" ((int)tmp), "g"((int)data)
+       );
 }
 
 int FSopen(char *name, char *cwd) {              // alloc FD to open CWD/name
@@ -154,37 +155,74 @@ int FSopen(char *name, char *cwd) {              // alloc FD to open CWD/name
    MyStrcpy(tmp, cwd);
    MyStrcat(tmp, name);
    asm("pushl %%eax;
-        pushl %%ebx;
-        movl %1, %%eax;
-        int $110;
-        movl %%ebx, %0;
-        popl %%ebx;
-        popl %%eax;"
-        : "=g" (fd)
-        : "g" (tmp)
-        );
+       pushl %%ebx;
+       movl %1, %%eax;
+       int $110;
+       movl %%ebx, %0;
+       popl %%ebx;
+       popl %%eax;"
+       : "=g" (fd)
+       : "g" (tmp)
+       );
    return fd;
 }
 
 void FSread(int fd, char *data) {                // read FD into data buffer
    asm("pushl %%eax;
-        pushl %%ebx;
-        movl %0, %%eax;
-        movl %1, %%ebx;
-        int $111;
-        popl %%ebx;
-        popl %%eax;"
-        :
-        : "g" (fd), "g" (data)
-        );
-
+       pushl %%ebx;
+       movl %0, %%eax;
+       movl %1, %%ebx;
+       int $111;
+       popl %%ebx;
+       popl %%eax;"
+       :
+       : "g" (fd), "g" (data)
+       );
 }
+
 void FSclose(int fd){                           // close allocated fd (FD)
    asm("pushl %%eax;
-        movl %0, %%eax;
-        int $112;
-        popl %%eax;"
-        :
-        : "g" (fd)
-        );
+       movl %0, %%eax;
+       int $112;
+       popl %%eax;"
+       :
+       : "g" (fd)
+       );
+}
+
+int Fork(char *p){  // parent creates child, child PID returns
+  int child_pid;
+   asm("pushl %%eax;
+       pushl %%ebx;
+       movl %1, %%eax;
+       int $113;
+       movl %0, %%ebx;
+       popl %%ebx;
+       popl %%eax;"
+       : "=g" (child_pid)
+       : "g" ((int)p) 
+       );
+  return child_pid;
+}
+
+int Wait(void){ // parent process waits exit_num from exiting child
+  int exit_num_p;
+  asm("pushl %%eax;
+      int $114;
+      movl %0, %%eax;
+      popl %%eax;"
+      : "=g" (exit_num_p)
+      :
+      );
+  return exit_num_p;
+}
+
+void Exit(int exit_num){
+  asm("pushl %%eax;
+      movl %0, %%eax;
+      int $115;
+      popl %%eax;"
+      :
+      : "g" (exit_num)
+      );
 }

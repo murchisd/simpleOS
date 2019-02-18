@@ -331,13 +331,13 @@ $(MY_DLI) :	$(OBJECTS) Makefile
 #  Dependencies.
 #### YQYQYQ-MARK-2 ####
 #
-#  Dependencies generated Sun Apr  9 20:43:29 PDT 2017 by (spede-mkmf $Revision: 1.2 $/1)
+#  Dependencies generated Sun Apr 16 17:59:00 PDT 2017 by (spede-mkmf $Revision: 1.2 $/1)
 #
 
 events.o: events.S \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/asmacros.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
- events.h types.h
+ events.h types.h FStypes.h
 handlers.o: handlers.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/flames.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
@@ -356,7 +356,7 @@ handlers.o: handlers.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/string.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdlib.h \
- types.h handlers.h tools.h data.h proc.h
+ types.h FStypes.h handlers.h tools.h data.h proc.h
 main.o: main.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/flames.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
@@ -375,7 +375,8 @@ main.o: main.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/string.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdlib.h \
- handlers.h types.h tools.h proc.h events.h services.h
+ handlers.h types.h FStypes.h tools.h proc.h events.h services.h \
+ FSdata.h
 proc.o: proc.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/flames.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
@@ -394,8 +395,8 @@ proc.o: proc.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/string.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdlib.h \
- data.h types.h proc.h services.h
-services.o: services.c data.h types.h services.h
+ data.h types.h FStypes.h proc.h services.h tools.h
+services.o: services.c data.h types.h FStypes.h tools.h services.h
 tools.o: tools.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/flames.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/sys/cdefs.h \
@@ -414,7 +415,7 @@ tools.o: tools.c spede.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/machine/rs232.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/string.h \
  /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/include/spede/stdlib.h \
- types.h data.h
+ types.h FStypes.h data.h
 
 #### YQYQYQ-STOP-2 ####
 

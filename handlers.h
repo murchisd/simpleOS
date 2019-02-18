@@ -40,4 +40,8 @@ dir_t *FSfindNameSub( char *name, dir_t *this_dir );
 void FSdir2attr( dir_t *dir_p, attr_t *attr_p );
 void FScloseHandler(void);
 
+//Phase 7
+void ForkHandler(char *bin_code, int *child_pid);
+void WaitHandler(int *exit_num_p);
+void ExitHandler(int exit_num);
 #endif

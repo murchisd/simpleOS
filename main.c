@@ -21,6 +21,7 @@ int current_time;       //Current running time of OS
 sem_t sem[Q_SIZE];      //Array of Semaphores
 unsigned short *ch_p;   //check ps and a sem
 port_t port[PORT_NUM];
+mem_page_t mem_page[MEM_PAGE_NUM];
 
 void Scheduler() {         // choose a PID as current_pid to load/run
 //Phase 1
@@ -57,6 +58,12 @@ int main() {
    ch_p = (unsigned short *)0xb8000;
    current_time=0;
 
+//Phase 7
+   for(i=0;i<MEM_PAGE_NUM;i++){
+	mem_page[i].owner=0;
+	mem_page[i].addr = (char *)(MEM_BASE + MEM_PAGE_SIZE*i);
+   }
+
 //Phase 6
    for (i=0; i<FD_NUM; i++){
        fd_array[i].owner=0;
@@ -67,6 +74,10 @@ int main() {
    www_dir[0].size = sizeof(www_dir);     // definitions which compiler rejects
    www_dir[1].size = root_dir[0].size;
 
+//Phase 5
+  for(i=0;i<PORT_NUM;i++){
+    port[i].owner=0;
+  }
 //Phase 1
    MyBzero((char*)&ready_q,sizeof(q_t));
    MyBzero((char*)&free_q,sizeof(q_t)); 
@@ -94,6 +105,9 @@ int main() {
    fill_gate(&IDT_p[FSREAD_EVENT],(int)FSreadEvent,get_cs(),ACC_INTR_GATE,0); //Phase 6
    fill_gate(&IDT_p[FSCLOSE_EVENT],(int)FScloseEvent,get_cs(),ACC_INTR_GATE,0); //Phase 6
    
+   fill_gate(&IDT_p[FORK_EVENT],(int)ForkEvent,get_cs(),ACC_INTR_GATE,0); //Phase 7
+   fill_gate(&IDT_p[WAIT_EVENT],(int)WaitEvent,get_cs(),ACC_INTR_GATE,0); //Phase 7
+   fill_gate(&IDT_p[EXIT_EVENT],(int)ExitEvent,get_cs(),ACC_INTR_GATE,0); //Phase 7
    outportb(0x21, ~(1+8+16));      //set PIC mask to open up for timer IRQ0 only
    NewProcHandler(Init);    //to create Init proc
 
@@ -157,12 +171,19 @@ void Kernel(TF_t *TF_p) {   // kernel code exec (at least 100 times/second)
     case FSCLOSE_EVENT:  //Phase 6
          FScloseHandler();
          break;
+    case FORK_EVENT:  //Phase 7
+      ForkHandler((char *)TF_p->eax, &TF_p->ebx);
+      break;
+    case WAIT_EVENT:  //Phase 7
+      WaitHandler(&TF_p->eax);
+      break;
+    case EXIT_EVENT:
+      ExitHandler(TF_p->eax);
+      break;
     default:
          cons_printf("Kernel Panic: unknown event_num %d!\n",TF_p->event_num);
          breakpoint();
    }
-
-
    Scheduler();// to select current_pid (if needed)
    Loader(pcb[current_pid].TF_p); //with the TF address of current_pid
 }

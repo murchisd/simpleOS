@@ -7,7 +7,7 @@
 #include "FStypes.h"
 #define LOOP 1666666         // handly loop limit exec asm("inb $0x80");
 //#define LOOP 166666
-#define TIME_LIMIT 200 
+#define TIME_LIMIT 10 
 #define PROC_NUM 20          // max number of processes
 #define Q_SIZE 20            // queuing capacity
 #define PROC_STACK_SIZE 4096 // process runtime stack in bytes
@@ -15,6 +15,11 @@
 //Phase 5
 #define PORT_NUM 3        // 3 extra serial ports: COM2/3/4
 #define BUFF_SIZE 101     // 100 data char + delimiter null char
+
+//Phase 7
+#define MEM_BASE 0xE00000
+#define MEM_PAGE_NUM 100
+#define MEM_PAGE_SIZE 4096
 
 //Phase 1
 
@@ -56,6 +61,7 @@ typedef struct {             // PCB describes proc image
    int cpu_time;             // CPU runtime
    TF_t *TF_p;               // points to trapframe of process
    int wake_time;            // if current_time == then wake up
+   int ppid;
 } pcb_t;
 
 typedef struct {             // generic queue type
@@ -82,4 +88,9 @@ typedef struct {
        loopback_q;           // loopback buffer
    } port_t;
 
+//Phase 7
+typedef struct{
+   int owner;
+   char *addr;
+}mem_page_t;
 #endif // __TYPES_H__

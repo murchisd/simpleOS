@@ -16,4 +16,7 @@ void TermCat(char *name, char *cwd, int my_port);
 void TermLs(char *cwd, int my_port);
 void Attr2Str(attr_t *attr_p, char *str);
 
+//Phase 7
+
+int TermBin(char *name, char *cwd, int my_port);
 #endif

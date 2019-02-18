@@ -244,7 +244,7 @@ void PortHandler(void) {         // IRQ3/4 event handler
 
       //search each port data (loop index port_num from 0 to PORT_NUM-1):
       //   if its owner is zero, break loop // found one
-      for(port_num=0;port_num<PORT_NUM-1;port_num++){
+      for(port_num=0;port_num<PORT_NUM;port_num++){
         if(port[port_num].owner==0){
           break;
         }
@@ -528,3 +528,142 @@ void FScloseHandler(void) {
    else  cons_printf("FScloseHandler: cannot close FD!\n");
 }
 
+void ForkHandler(char *bin_code, int *child_pid){
+   int i;
+   /*   A. try to find a free memory page
+         for-loop i through all index of mem_page[]
+            if owner == 0 --> break loop
+         if i is MEM_PAGE_NUM
+            cons_printf("Kernel Panic: no memory page available!\n");
+            *child_pid = 0  // no PID can be returned
+            return
+   */ 
+   for( i=0; i <MEM_PAGE_NUM ; i++) {
+       if(mem_page[i].owner == 0) break;
+   }
+   if(i == MEM_PAGE_NUM) {
+       cons_printf("Kernel Panic: no memory page available!\n");
+       *child_pid = 0;
+       return;
+   }
+/*
+        B. try to allocate a PID
+         if free_q has a size 0
+            cons_printf("Kernel Panic: no PID available!\n");
+            *child_pid = 0  // no PID can be returned
+            return
+*/
+   if(free_q.size == 0) {
+       cons_printf("Kernel Panic: no PID available!\n");
+       *child_pid = 0;  // no PID can be returned
+       return;
+   }
+/*       C. get a PID from free_q
+         enqueue it to ready_q
+         clear PCB of this PID with MyBzero
+         set its state to ...
+         set its ppid to ...
+*/
+   *child_pid = DeQ(&free_q);
+   EnQ(*child_pid, &ready_q);
+   MyBzero((char*)&pcb[*child_pid], sizeof(pcb_t));  //TODO Verify this
+   pcb[*child_pid].state = READY;
+   pcb[*child_pid].ppid = current_pid;
+/*      D. clear memory page with MyBzero (starting at the page addr, size MEM_PAGE_SIZE)
+         set memory page owner to ...
+         copy bin_code into the memory page with MyMemcpy (size MEM_PAGE_SIZE)
+*/
+   MyBzero((char *)mem_page[i].addr, MEM_PAGE_SIZE); //TODO this might be the issue
+   mem_page[i].owner = *child_pid;
+   MyMemcpy((char *)mem_page[i].addr, (char *)bin_code, MEM_PAGE_SIZE); //TODO here too
+   
+/*      E. set trapframe ptr in PCB to near the end of the memory page (leave TF space)
+         set the EIP of trapframe to the start of the memory page
+         set rest of the trapframe as before (eflags, cs, ds, etc.)
+*/
+   pcb[*child_pid].TF_p = (TF_t *)(mem_page[i].addr + MEM_PAGE_SIZE  - sizeof(TF_t)); //TODO guessing here
+//   pcb[*child_pid].TF_p = (TF_t*) &proc_stack[pid][PROC_STACK_SIZE - sizeof(TF_t)];
+   pcb[*child_pid].TF_p->eip = (int)mem_page[i].addr;
+   pcb[*child_pid].TF_p->eflags = EF_DEFAULT_VALUE|EF_INTR;
+   pcb[*child_pid].TF_p->cs = get_cs();
+   pcb[*child_pid].TF_p->ds = get_ds();
+   pcb[*child_pid].TF_p->es = get_es();
+   pcb[*child_pid].TF_p->fs = get_fs();
+   pcb[*child_pid].TF_p->gs = get_gs();
+   
+}
+
+void WaitHandler(int *exit_num_p){
+   int child_pid, page_index;
+/*      A. loop thru pcb[] looking for ppid being running PID and state ZOMBIE
+         if none found, block the running (parent) process by
+            set its state to WAIT
+            no process running (set current_pid to 0)
+            return
+*/
+   for(child_pid=0; child_pid<PROC_NUM; child_pid++) {
+       if(pcb[child_pid].ppid == current_pid && pcb[child_pid].state == ZOMBIE) break;
+   }
+   if(child_pid == PROC_NUM) {
+       pcb[current_pid].state = WAIT;
+       current_pid = 0;
+       return;
+   }
+/*      B. otherwise (found)
+         B1. give to the calling parent process the exit number from the found
+             ZOMBIE child (in its TF EAX)
+*/
+   pcb[current_pid].TF_p->eax = *exit_num_p;
+/*      C. reclaim child's resources
+         enqueue the found child pid to free_q
+         change its state to ...
+         reclaim the child's resource:
+         loop thru mem_page[] for owner being the child -> set owner to 0
+*/
+   EnQ(child_pid, &free_q);
+   pcb[child_pid].state = FREE;
+   for( page_index=0; page_index <MEM_PAGE_NUM ; page_index++) {
+       if(mem_page[page_index].owner == child_pid) mem_page[page_index].owner=0;
+   }
+
+}
+
+void ExitHandler(int exit_num){
+   int ppid, *exit_num_p, page_index;
+/*      A. if the state of the parent of the calling process is not WAIT
+          (it has not yet call Wait), then change the state of the calling
+          (running) process to ZOMBIE
+          no process running (set current_pid to 0)
+          return
+*/ 
+    ppid = pcb[current_pid].ppid;
+    if(pcb[ppid].state!=WAIT){
+        pcb[current_pid].state=ZOMBIE;
+        current_pid=0;
+        return;
+    }
+
+/*      B. otherwise (parent awaits)
+         release the parent by upgrade its state to ...
+         enqueue it to ...
+         copy exit_number to parent by using the pointer
+            exit_num_p = (int *) the EAX of the TF of parent
+*/
+    pcb[ppid].state=READY;
+    EnQ(ppid, &ready_q);
+    exit_num_p = (int *)pcb[ppid].TF_p->eax;
+
+
+/*      C. reclaim child's resources
+          loop thru mem_page[] for owner being the child -> set owner to 0
+          enqueue child PID to ...
+          change state of child PID to ...
+          no process running (set current_pid to 0)
+*/
+   for(page_index=0; page_index <MEM_PAGE_NUM ; page_index++) {
+       if(mem_page[page_index].owner == current_pid) mem_page[page_index].owner=0;
+   }
+   EnQ(current_pid, &free_q);
+   pcb[current_pid].state = FREE;
+   current_pid=0;
+}

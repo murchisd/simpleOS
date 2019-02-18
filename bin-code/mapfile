@@ -1,0 +1,187 @@
+
+Memory Configuration
+
+Name             Origin             Length            
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+Address of section .text set to 0x1000080
+LOAD sleep3.o
+LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu/2.7.2.3/libgcc.a
+LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/lib/libi386.a
+LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu/2.7.2.3/libgcc.a
+                0x08048074                .=(0x8048000+SIZEOF_HEADERS)
+
+.interp
+ *(.interp)
+
+.hash
+ *(.hash)
+
+.dynsym
+ *(.dynsym)
+
+.dynstr
+ *(.dynstr)
+
+.rel.text
+ *(.rel.text)
+
+.rela.text
+ *(.rela.text)
+
+.rel.data
+ *(.rel.data)
+
+.rela.data
+ *(.rela.data)
+
+.rel.rodata
+ *(.rel.rodata)
+
+.rela.rodata
+ *(.rela.rodata)
+
+.rel.got
+ *(.rel.got)
+
+.rela.got
+ *(.rela.got)
+
+.rel.ctors
+ *(.rel.ctors)
+
+.rela.ctors
+ *(.rela.ctors)
+
+.rel.dtors
+ *(.rel.dtors)
+
+.rela.dtors
+ *(.rela.dtors)
+
+.rel.init
+ *(.rel.init)
+
+.rela.init
+ *(.rela.init)
+
+.rel.fini
+ *(.rel.fini)
+
+.rela.fini
+ *(.rela.fini)
+
+.rel.bss
+ *(.rel.bss)
+
+.rela.bss
+ *(.rela.bss)
+
+.rel.plt
+ *(.rel.plt)
+
+.rela.plt
+ *(.rela.plt)
+
+.init
+ *(.init)
+
+.plt
+ *(.plt)
+
+.text           0x01000080        0xe
+ *(.text)
+ .text          0x01000080        0xe sleep3.o
+                0x01000080                _start
+ *(.gnu.warning)
+                0x0100008e                _etext=.
+                0x0100008e                PROVIDE (etext, .)
+
+.fini
+ *(.fini)
+
+.rodata
+ *(.rodata)
+
+.rodata1
+ *(.rodata1)
+                0x0100008e                .=.
+
+.data           0x01000090       0x13
+ *(.data)
+ .data          0x01000090       0x13 sleep3.o
+
+.data1
+ *(.data1)
+
+.ctors
+ *(.ctors)
+
+.dtors
+ *(.dtors)
+
+.got
+ *(.got.plt)
+ *(.got)
+
+.dynamic
+ *(.dynamic)
+
+.sdata
+ *(.sdata)
+                0x010000a3                _edata=.
+                0x010000a3                PROVIDE (edata, .)
+                0x010000a3                __bss_start=.
+
+.sbss
+ *(.sbss)
+ *(.scommon)
+
+.bss            0x010000a4        0x0
+ *(.dynbss)
+ *(.bss)
+ *(COMMON)
+                0x010000a4                _end=.
+                0x010000a4                PROVIDE (end, .)
+
+.stab
+ *(.stab)
+
+.stabstr
+ *(.stabstr)
+
+.stab.excl
+ *(.stab.excl)
+
+.stab.exclstr
+ *(.stab.exclstr)
+
+.stab.index
+ *(.stab.index)
+
+.stab.indexstr
+ *(.stab.indexstr)
+
+.comment
+ *(.comment)
+
+.debug
+ *(.debug)
+
+.debug_srcinfo
+ *(.debug_srcinfo)
+
+.debug_aranges
+ *(.debug_aranges)
+
+.debug_pubnames
+ *(.debug_pubnames)
+
+.debug_sfnames
+ *(.debug_sfnames)
+
+.line
+ *(.line)
+OUTPUT(sleep3 elf32-i386)

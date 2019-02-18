@@ -100,3 +100,15 @@ ENTRY(FScloseEvent)
   pushl $FSCLOSE_EVENT
   jmp CommonPart
 
+//Phase 7
+ENTRY(ForkEvent)
+  pushl $FORK_EVENT
+  jmp CommonPart
+
+ENTRY(WaitEvent)
+  pushl $WAIT_EVENT
+  jmp CommonPart
+
+ENTRY(ExitEvent)
+  pushl $EXIT_EVENT
+  jmp CommonPart
