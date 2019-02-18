@@ -54,12 +54,13 @@ void TermProc(void) {
    my_port = PortAlloc();
 
    while(1){
+     exit_num =0;
        while(1){
            //prompt and get login and password strings
            PortWrite(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n\r",my_port);
-           PortWrite("Username:",my_port);
+           PortWrite("Team Athwal Login:",my_port);
            PortRead(login_str,my_port);
-           PortWrite("Password:",my_port);
+           PortWrite("Team Athwal Password:",my_port);
            PortRead(passwd_str,my_port);
            len = MyStrlen(login_str);
            if(len==0) continue;
@@ -73,8 +74,8 @@ void TermProc(void) {
                }
            }
            if (!pass_match) continue;
-           PortWrite("      Welcome\n\r",my_port);
-           PortWrite("      Services are pwd, cd dir-name, ls, cat filename, exit\n\r",my_port);
+           PortWrite("         Welcome\n\r",my_port);
+           PortWrite("         Services are pwd, cd dir-name, ls, cat filename, exit\n\r",my_port);
            MyStrcpy(cwd,"/");
            break;	
        }
@@ -113,23 +114,25 @@ void TermProc(void) {
 int TermBin(char *name, char *cwd, int my_port){
    char attr_data[BUFF_SIZE], str[BUFF_SIZE];
    attr_t *attr_p;
-    int child_pid;
+   int child_pid;
    
-    FSfind(name, cwd, attr_data);
+   FSfind(name, cwd, attr_data);
    
-    if (MyStrlen(attr_data) == 0) {
-       PortWrite("Not Found\n\r",my_port);
-       return 0;
-    }
-    attr_p = (attr_t *) attr_data;  
-    if (!QBIT_ON(attr_p->mode, A_XOTH)) { // mode is executable
-       PortWrite("Not Executable\n\r",my_port);
-       return 0;
-    }
-    child_pid = Fork(attr_p->data);
-    sprintf(str,"%d (0x%x)\n\r",child_pid,child_pid);
-    PortWrite(str,my_port);
-    return Wait();
+   if (MyStrlen(attr_data) == 0) {
+       PortWrite("         Command not found!\n\r",my_port);
+       return -1;
+   }
+   attr_p = (attr_t *) attr_data;  
+   if (!QBIT_ON(attr_p->mode, A_XOTH)) { // mode is executable
+       PortWrite("         Not an Executable Command!\n\r",my_port);
+       return -1;
+   }
+   child_pid = Fork(attr_p->data);
+   //sprintf(str,"%d (0x%x)\n\r",child_pid,child_pid);
+   sprintf(str,"         Forked Child PID %d!\n\r",child_pid);
+   PortWrite(str,my_port);
+   MySleep(4);
+   return Wait();
 }    
 
 void TermCd(char *name, char *cwd, int my_port) {
@@ -147,13 +150,13 @@ void TermCd(char *name, char *cwd, int my_port) {
    FSfind(name, cwd, attr_data);
 
    if (MyStrlen(attr_data) == 0) {
-       PortWrite("Not Found\n\r",my_port);
+       PortWrite("         FSfind: No such directory!\n\r",my_port);
        return;
    }
    attr_p = (attr_t *) attr_data;  
    //if attr_p->mode is a file (not directory),
    if (!A_ISDIR(attr_p->mode)) {
-       PortWrite("cannot cd a file\n\r",my_port);
+       PortWrite("         Usage: cd a directory, not a file!\n\r",my_port);
        return;
    }
    MyStrcat(cwd,name);
@@ -169,13 +172,13 @@ void TermCat(char *name, char *cwd, int my_port) {
    //call FSfind(), given name, cwd, attr_data
    FSfind(name, cwd, attr_data);
    if (MyStrlen(attr_data) == 0) {
-       PortWrite("Not Found\n\r",my_port);
-		   return;
+       PortWrite("         FSfind: no such file!\n\r",my_port);
+       return;
    }
    attr_p = (attr_t *) attr_data;  
    //if attr_p->mode is a directory (not file),
    if (A_ISDIR(attr_p->mode)) {
-       PortWrite("cannot cat a directory\n\r",my_port);
+       PortWrite("         Usage: cat a file, not a directory!\n\r",my_port);
        return;
    }
    //call FSopen(), given name and cwd to get my_fd returned
@@ -198,14 +201,14 @@ void TermLs(char *cwd, int my_port) {
    //call FSfind(), given "", cwd, and attr_data (to be filled)
    FSfind("", cwd, attr_data);
    if (MyStrlen(attr_data) == 0) {
-       PortWrite("Not Found\n\r",my_port);
+       PortWrite("         Not Found!\n\r",my_port);
        return;
    }
    attr_p = (attr_t *) attr_data;  
 
    //if attr_p->mode is a file (not directory),
    if (!A_ISDIR(attr_p->mode)) {
-       PortWrite("cannot ls a file\n\r",my_port);
+       PortWrite("         Cannot ls a File!\n\r",my_port);
        return;
    }
    //  call FSopen(), given "" and cwd to get my_fd returned

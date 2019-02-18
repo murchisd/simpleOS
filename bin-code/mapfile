@@ -7,7 +7,7 @@ Name             Origin             Length
 Linker script and memory map
 
 Address of section .text set to 0x1000080
-LOAD sleep3.o
+LOAD printer_msg.o
 LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu/2.7.2.3/libgcc.a
 LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/i386-unknown-gnu/lib/libi386.a
 LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu/2.7.2.3/libgcc.a
@@ -91,13 +91,13 @@ LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu
 .plt
  *(.plt)
 
-.text           0x01000080        0xe
+.text           0x01000080       0x15
  *(.text)
- .text          0x01000080        0xe sleep3.o
+ .text          0x01000080       0x15 printer_msg.o
                 0x01000080                _start
  *(.gnu.warning)
-                0x0100008e                _etext=.
-                0x0100008e                PROVIDE (etext, .)
+                0x01000095                _etext=.
+                0x01000095                PROVIDE (etext, .)
 
 .fini
  *(.fini)
@@ -107,11 +107,11 @@ LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu
 
 .rodata1
  *(.rodata1)
-                0x0100008e                .=.
+                0x01000095                .=.
 
-.data           0x01000090       0x13
+.data           0x01000098       0x23
  *(.data)
- .data          0x01000090       0x13 sleep3.o
+ .data          0x01000098       0x23 printer_msg.o
 
 .data1
  *(.data1)
@@ -131,20 +131,20 @@ LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu
 
 .sdata
  *(.sdata)
-                0x010000a3                _edata=.
-                0x010000a3                PROVIDE (edata, .)
-                0x010000a3                __bss_start=.
+                0x010000bb                _edata=.
+                0x010000bb                PROVIDE (edata, .)
+                0x010000bb                __bss_start=.
 
 .sbss
  *(.sbss)
  *(.scommon)
 
-.bss            0x010000a4        0x0
+.bss            0x010000bc        0x0
  *(.dynbss)
  *(.bss)
  *(COMMON)
-                0x010000a4                _end=.
-                0x010000a4                PROVIDE (end, .)
+                0x010000bc                _end=.
+                0x010000bc                PROVIDE (end, .)
 
 .stab
  *(.stab)
@@ -184,4 +184,4 @@ LOAD /gaia/home/project/spede2/Target-i386/i686/gnu/lib/gcc-lib/i386-unknown-gnu
 
 .line
  *(.line)
-OUTPUT(sleep3 elf32-i386)
+OUTPUT(printer_msg elf32-i386)

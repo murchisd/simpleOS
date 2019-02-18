@@ -196,7 +196,7 @@ int Fork(char *p){  // parent creates child, child PID returns
        pushl %%ebx;
        movl %1, %%eax;
        int $113;
-       movl %0, %%ebx;
+       movl %%ebx, %0;
        popl %%ebx;
        popl %%eax;"
        : "=g" (child_pid)
@@ -209,7 +209,7 @@ int Wait(void){ // parent process waits exit_num from exiting child
   int exit_num_p;
   asm("pushl %%eax;
       int $114;
-      movl %0, %%eax;
+      movl %%eax, %0;
       popl %%eax;"
       : "=g" (exit_num_p)
       :

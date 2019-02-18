@@ -6,7 +6,6 @@
 
 #include "FStypes.h"
 #define LOOP 1666666         // handly loop limit exec asm("inb $0x80");
-//#define LOOP 166666
 #define TIME_LIMIT 10 
 #define PROC_NUM 20          // max number of processes
 #define Q_SIZE 20            // queuing capacity
@@ -62,6 +61,7 @@ typedef struct {             // PCB describes proc image
    TF_t *TF_p;               // points to trapframe of process
    int wake_time;            // if current_time == then wake up
    int ppid;
+   int MMU;
 } pcb_t;
 
 typedef struct {             // generic queue type

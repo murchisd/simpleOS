@@ -1,5 +1,5 @@
 // main.c, 159
-// This is kernel code for phase 6
+// This is kernel code for phase 8
 //
 // Team Name: Athwal (Members: Donald Murchison and Brian Souza)
 
@@ -22,6 +22,7 @@ sem_t sem[Q_SIZE];      //Array of Semaphores
 unsigned short *ch_p;   //check ps and a sem
 port_t port[PORT_NUM];
 mem_page_t mem_page[MEM_PAGE_NUM];
+int kernel_MMU;        //address of main kernel address translation table
 
 void Scheduler() {         // choose a PID as current_pid to load/run
 //Phase 1
@@ -37,10 +38,6 @@ void Scheduler() {         // choose a PID as current_pid to load/run
    pcb[current_pid].state=RUN;  //update its state
 
 //Phase 3
-   if(current_pid>9){
-      ch_p[current_pid*80+39] = 0xf00 + 0x30 + (current_pid/10);
-   }
-   ch_p[current_pid*80+40] = 0xf00 + 0x30 + (current_pid%10);     // show Pid
    ch_p[current_pid*80+42] = 0xf00 + 'R';
 
 //Phase 1
@@ -57,7 +54,11 @@ int main() {
 //Phase 2
    ch_p = (unsigned short *)0xb8000;
    current_time=0;
-
+//Phase 8
+    kernel_MMU = get_cr3();
+    for(i=0;i<PROC_NUM;i++){
+        pcb[i].MMU=0;
+    }
 //Phase 7
    for(i=0;i<MEM_PAGE_NUM;i++){
 	mem_page[i].owner=0;
@@ -113,8 +114,8 @@ int main() {
 
    NewProcHandler(TermProc); 
    NewProcHandler(TermProc);
-   
    Scheduler();             //to select current_pid (will be 1)
+   //set_cr3(pcb[current_pid].MMU);
    Loader(pcb[current_pid].TF_p);// TF address of current_pid
 
    return 0; // compiler needs for syntax altho this statement is never exec
@@ -185,6 +186,9 @@ void Kernel(TF_t *TF_p) {   // kernel code exec (at least 100 times/second)
          breakpoint();
    }
    Scheduler();// to select current_pid (if needed)
+   if(pcb[current_pid].MMU!=0){
+       set_cr3(pcb[current_pid].MMU);
+   }
    Loader(pcb[current_pid].TF_p); //with the TF address of current_pid
 }
 

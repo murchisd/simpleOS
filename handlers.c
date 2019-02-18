@@ -42,6 +42,9 @@ void NewProcHandler(func_ptr_t p) {  // arg: where process code starts
    //the gs in the TF is get_gs();   // duplicate from current CPU
    pcb[pid].TF_p->gs = get_gs();
 
+   //Guessing because makes no sense to have MMU 0 when running
+   //pcb[pid].MMU = kernel_MMU;
+
 //Phase 3
    if(pid>9){
       ch_p[pid*80+39] = 0xf00 + 0x30 + (pid/10);
@@ -529,15 +532,119 @@ void FScloseHandler(void) {
 }
 
 void ForkHandler(char *bin_code, int *child_pid){
-   int i;
-   /*   A. try to find a free memory page
-         for-loop i through all index of mem_page[]
-            if owner == 0 --> break loop
-         if i is MEM_PAGE_NUM
-            cons_printf("Kernel Panic: no memory page available!\n");
-            *child_pid = 0  // no PID can be returned
-            return
-   */ 
+   int i, got, page_got[5];
+   TF_t *TF_p;                                                 // local ptr, use below
+   char *main_table, *code_table, *stack_table, *code_page, *stack_page; // easy naming
+/*   A. try to locate 5 free memory pages:
+   set 'got' to 0
+
+   loop i thru mem_page[i]
+      if owner is 0)
+         page_got[got++] = i  // got 1 page index
+         if 'got' enough (becomes 5), break loop
+
+   if didn't get 5
+      cons_printf("Kernel Panic: not enough memory pages available!\n");
+      set 0 as what child_pid points
+      return (end this handler)
+*/
+   got = 0;
+   for( i=0; i <MEM_PAGE_NUM; i++) {
+       if(mem_page[i].owner == 0) {
+	       page_got[got++] = i;
+		   if(got == 5) break;
+	   }
+   }
+   if(got != 5) {
+       cons_printf("Kernel Panic: no memory page available!\n");
+       *child_pid = 0;
+       return;
+   }
+/* B. if free_q.size is 0
+      cons_printf("Kernel Panic: no PID available!\n");
+      set 0 as what child_pid points
+      return (end this handler)
+*/
+   if(free_q.size == 0) {
+       cons_printf("Kernel Panic: no PID available!\n");
+       *child_pid = 0;  // no PID can be returned
+       return;
+   }
+/* C. set the better-named addresses (char *) from the 5 allocated memory pages:
+      main_table = address of the 1st DRAM page allocated
+      code_table = ... 2nd ...
+      stack_table = ... 3rd ...
+      code_page = ... 4th ...
+      stack_page = ... 5th ...
+*/
+   main_table = (char *)mem_page[page_got[0]].addr;
+   code_table = (char *)mem_page[page_got[1]].addr;
+   stack_table = (char *)mem_page[page_got[2]].addr;
+   code_page = (char *)mem_page[page_got[3]].addr;
+   stack_page = (char *)mem_page[page_got[4]].addr;
+/* D. get a new PID (set it as what child_pid now points) from free_q
+
+   loop 'got' from 0 to 4:
+      set the owner of memory pages (indexed by page_got[got]) to the new pid
+      clear the same memory page
+
+   clear its PCB
+   enqueue its PID to ready_q
+   update its state
+   update its ppid, too
+   set its TF_p to 2G (0x80000000) - size of trapframe type  <------- ***
+   set the MMU in the PCB of the new process to main_table <------- ***
+*/
+
+   *child_pid = DeQ(&free_q);
+   for( i=0; i <5; i++) {
+       mem_page[page_got[i]].owner = *child_pid;
+	   MyBzero((char *)mem_page[page_got[i]].addr, MEM_PAGE_SIZE);
+   }
+   MyBzero((char*)&pcb[*child_pid], sizeof(pcb_t));  
+   EnQ(*child_pid, &ready_q);
+   pcb[*child_pid].state = READY;
+   pcb[*child_pid].ppid = current_pid;
+   //set its TF_p to 2G (0x80000000) - size of trapframe type  <------- ***
+   //set the MMU in the PCB of the new process to main_table <------- ***
+   pcb[*child_pid].TF_p = (TF_t *)(0x80000000 - sizeof(TF_t));
+   pcb[*child_pid].MMU = (int)main_table;
+// E. copy the code into code_page (from the given argument)
+   MyMemcpy((char *)code_page, (char *)bin_code, MEM_PAGE_SIZE);
+/* F. set local variable TF_p to stack_page + MEM_PAGE_SIZE - sizeof(TF_t) <------- ***
+   set TF_p->EIP of TF to 1G (0x40000000)                          <------- ***
+   set rest of TF_p->xxx the same way as before
+*/
+   TF_p = (TF_t *)(stack_page + MEM_PAGE_SIZE  - sizeof(TF_t)); 
+   TF_p->eip = 0x40000000;
+   TF_p->eflags = EF_DEFAULT_VALUE|EF_INTR;
+   TF_p->cs = get_cs();
+   TF_p->ds = get_ds();
+   TF_p->es = get_es();
+   TF_p->fs = get_fs();
+   TF_p->gs = get_gs();
+
+/*G. MyMemcpy 1st 4 entries from kernel_MMU into main_table
+   Set entries 256 of main_table to code_table (bitwise-OR the two flags)
+   Set entries 511 of main_table to stack_table (bitwise-OR the two flags)
+   set entry 0 in code_table to code_page (bitwise-OR the two flags)
+  set entry 1023 in stack_table to stack_page (bitwise-OR the two flags)
+ */
+   //Not sure here, I think each entry is 4 bytes so copy 4*4*8 for first four entries 
+    MyMemcpy((char *)main_table, (char *)kernel_MMU, 16);
+    MyMemcpy((char *)&main_table[4*256],(char *)&code_table, 4);
+    main_table[4*256] = (int)main_table[4*256] | 0x3;
+    //main_table[256] = code_table|0x3;
+    //main_table[511] = stack_table + 0x3;
+    MyMemcpy((char *)&main_table[4*511],(char *)&stack_table,4);
+    main_table[4*511]= (int)main_table[4*511]|0x3;
+    //code_table[0] = mem_page[3].addr + 0x3;
+    MyMemcpy((char *)&code_table[0], (char *)&code_page,4);
+    code_table[0]=(int)code_table[0] | 0x3;
+    //stack_table[1023] = mem_page[4].addr + 0x3;
+    MyMemcpy((char *)&stack_table[4*1023],(char *)&stack_page,4);
+    stack_table[4*1023]=(int)stack_table[4*1023] | 0x3;
+ /*  
    for( i=0; i <MEM_PAGE_NUM ; i++) {
        if(mem_page[i].owner == 0) break;
    }
@@ -546,43 +653,21 @@ void ForkHandler(char *bin_code, int *child_pid){
        *child_pid = 0;
        return;
    }
-/*
-        B. try to allocate a PID
-         if free_q has a size 0
-            cons_printf("Kernel Panic: no PID available!\n");
-            *child_pid = 0  // no PID can be returned
-            return
-*/
    if(free_q.size == 0) {
        cons_printf("Kernel Panic: no PID available!\n");
        *child_pid = 0;  // no PID can be returned
        return;
    }
-/*       C. get a PID from free_q
-         enqueue it to ready_q
-         clear PCB of this PID with MyBzero
-         set its state to ...
-         set its ppid to ...
-*/
    *child_pid = DeQ(&free_q);
    EnQ(*child_pid, &ready_q);
-   MyBzero((char*)&pcb[*child_pid], sizeof(pcb_t));  //TODO Verify this
+   MyBzero((char*)&pcb[*child_pid], sizeof(pcb_t));  
    pcb[*child_pid].state = READY;
    pcb[*child_pid].ppid = current_pid;
-/*      D. clear memory page with MyBzero (starting at the page addr, size MEM_PAGE_SIZE)
-         set memory page owner to ...
-         copy bin_code into the memory page with MyMemcpy (size MEM_PAGE_SIZE)
-*/
-   MyBzero((char *)mem_page[i].addr, MEM_PAGE_SIZE); //TODO this might be the issue
+   MyBzero((char *)mem_page[i].addr, MEM_PAGE_SIZE);
    mem_page[i].owner = *child_pid;
-   MyMemcpy((char *)mem_page[i].addr, (char *)bin_code, MEM_PAGE_SIZE); //TODO here too
+   MyMemcpy((char *)mem_page[i].addr, (char *)bin_code, MEM_PAGE_SIZE);
    
-/*      E. set trapframe ptr in PCB to near the end of the memory page (leave TF space)
-         set the EIP of trapframe to the start of the memory page
-         set rest of the trapframe as before (eflags, cs, ds, etc.)
-*/
-   pcb[*child_pid].TF_p = (TF_t *)(mem_page[i].addr + MEM_PAGE_SIZE  - sizeof(TF_t)); //TODO guessing here
-//   pcb[*child_pid].TF_p = (TF_t*) &proc_stack[pid][PROC_STACK_SIZE - sizeof(TF_t)];
+   pcb[*child_pid].TF_p = (TF_t *)(mem_page[i].addr + MEM_PAGE_SIZE  - sizeof(TF_t)); 
    pcb[*child_pid].TF_p->eip = (int)mem_page[i].addr;
    pcb[*child_pid].TF_p->eflags = EF_DEFAULT_VALUE|EF_INTR;
    pcb[*child_pid].TF_p->cs = get_cs();
@@ -590,17 +675,11 @@ void ForkHandler(char *bin_code, int *child_pid){
    pcb[*child_pid].TF_p->es = get_es();
    pcb[*child_pid].TF_p->fs = get_fs();
    pcb[*child_pid].TF_p->gs = get_gs();
-   
+*/
 }
 
 void WaitHandler(int *exit_num_p){
    int child_pid, page_index;
-/*      A. loop thru pcb[] looking for ppid being running PID and state ZOMBIE
-         if none found, block the running (parent) process by
-            set its state to WAIT
-            no process running (set current_pid to 0)
-            return
-*/
    for(child_pid=0; child_pid<PROC_NUM; child_pid++) {
        if(pcb[child_pid].ppid == current_pid && pcb[child_pid].state == ZOMBIE) break;
    }
@@ -609,17 +688,9 @@ void WaitHandler(int *exit_num_p){
        current_pid = 0;
        return;
    }
-/*      B. otherwise (found)
-         B1. give to the calling parent process the exit number from the found
-             ZOMBIE child (in its TF EAX)
-*/
-   pcb[current_pid].TF_p->eax = *exit_num_p;
-/*      C. reclaim child's resources
-         enqueue the found child pid to free_q
-         change its state to ...
-         reclaim the child's resource:
-         loop thru mem_page[] for owner being the child -> set owner to 0
-*/
+   set_cr3(pcb[child_pid].MMU);
+   *exit_num_p = pcb[child_pid].TF_p->eax;
+   set_cr3(kernel_MMU);
    EnQ(child_pid, &free_q);
    pcb[child_pid].state = FREE;
    for( page_index=0; page_index <MEM_PAGE_NUM ; page_index++) {
@@ -630,12 +701,7 @@ void WaitHandler(int *exit_num_p){
 
 void ExitHandler(int exit_num){
    int ppid, *exit_num_p, page_index;
-/*      A. if the state of the parent of the calling process is not WAIT
-          (it has not yet call Wait), then change the state of the calling
-          (running) process to ZOMBIE
-          no process running (set current_pid to 0)
-          return
-*/ 
+    
     ppid = pcb[current_pid].ppid;
     if(pcb[ppid].state!=WAIT){
         pcb[current_pid].state=ZOMBIE;
@@ -643,27 +709,17 @@ void ExitHandler(int exit_num){
         return;
     }
 
-/*      B. otherwise (parent awaits)
-         release the parent by upgrade its state to ...
-         enqueue it to ...
-         copy exit_number to parent by using the pointer
-            exit_num_p = (int *) the EAX of the TF of parent
-*/
     pcb[ppid].state=READY;
     EnQ(ppid, &ready_q);
-    exit_num_p = (int *)pcb[ppid].TF_p->eax;
-
-
-/*      C. reclaim child's resources
-          loop thru mem_page[] for owner being the child -> set owner to 0
-          enqueue child PID to ...
-          change state of child PID to ...
-          no process running (set current_pid to 0)
-*/
-   for(page_index=0; page_index <MEM_PAGE_NUM ; page_index++) {
+    exit_num_p = (int *)&pcb[ppid].TF_p->eax;
+    *exit_num_p = exit_num;
+    
+    for(page_index=0; page_index <MEM_PAGE_NUM ; page_index++) {
        if(mem_page[page_index].owner == current_pid) mem_page[page_index].owner=0;
-   }
-   EnQ(current_pid, &free_q);
-   pcb[current_pid].state = FREE;
-   current_pid=0;
+    }
+    EnQ(current_pid, &free_q);
+    pcb[current_pid].state = FREE;
+    current_pid=0;
+    set_cr3(kernel_MMU);
+
 }
