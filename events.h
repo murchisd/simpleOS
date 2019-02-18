@@ -18,6 +18,10 @@
 #define SEMALLOC_EVENT 102  // IDT entry #102 for sem allocate service
 #define SEMWAIT_EVENT 103   // IDT entry #103 for sem wait kernel service
 #define SEMPOST_EVENT 104   // IDT entry #104 for sem post kernel service
+#define PORT_EVENT 35
+#define PORTALLOC_EVENT 106
+#define PORTWRITE_EVENT 107
+#define PORTREAD_EVENT 108
 
 #ifndef ASSEMBLER  // skip below if ASSEMBLER defined (from an assembly code)
                    // since below is not in assembler syntax
@@ -25,14 +29,27 @@ __BEGIN_DECLS
 
 #include "types.h"          // for 'TF_t' below
 
-void TimerEvent(void);      // coded in events.S, assembler won't like this syntax
+//Phase 1
+void TimerEvent(void); 
+void Loader(TF_t *); 
+
+//Phase 2
 void SleepEvent(void);
-void SysPrintEvent(void);
 void GetPidEvent(void);
+
+//Phase 3
 void SemAllocEvent(void);
 void SemWaitEvent(void);
 void SemPostEvent(void);
-void Loader(TF_t *);        // coded in events.S
+
+//Phase 4
+void SysPrintEvent(void);
+
+//Phase 5
+void PortEvent(void);
+void PortAllocEvent(void);
+void PortWriteEvent(void);
+void PortReadEvent(void);
 
 __END_DECLS
 

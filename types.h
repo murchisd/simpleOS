@@ -10,6 +10,12 @@
 #define Q_SIZE 20            // queuing capacity
 #define PROC_STACK_SIZE 4096 // process runtime stack in bytes
 
+//Phase 5
+#define PORT_NUM 3        // 3 extra serial ports: COM2/3/4
+#define BUFF_SIZE 101     // 100 data char + delimiter null char
+
+//Phase 1
+
 // Trapframe to save the state of CPU registers /before entering
 // kernel code, and loaded back (in reverse) to resume process
 typedef struct { 
@@ -55,10 +61,23 @@ typedef struct {             // generic queue type
    int size;                 // size is also where the tail is for new data
 } q_t;
 
+//Phase 3
 typedef struct{
   int owner;
   int passes;
   q_t wait_q;
 }sem_t;
+
+//Phase 5
+typedef struct {
+   int owner,                // allocation mark
+       IO,                   // I/O map #
+       write_sid,            // write flow-control sid
+       read_sid,             // read flow-control sid
+       write_ok;             // write available flag
+   q_t write_q,              // write buffer
+       read_q,               // read buffer
+       loopback_q;           // loopback buffer
+   } port_t;
 
 #endif // __TYPES_H__

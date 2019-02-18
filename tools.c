@@ -4,6 +4,8 @@
 #include "types.h"
 #include "data.h"
 
+
+//Phase 1
 // clear DRAM data blocks by filling zeroes
 void MyBzero(char *p, int size) {
    int i=0;

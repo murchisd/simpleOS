@@ -5,6 +5,7 @@
 
 #include "types.h" // need definition of 'q_t' below
 
+//Phase 1
 void MyBzero(char *, int);
 int DeQ(q_t *);
 void EnQ(int, q_t *);
